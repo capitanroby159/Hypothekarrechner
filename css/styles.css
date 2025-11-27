@@ -131,6 +131,18 @@ input:focus, select:focus{outline:none; border-color:var(--brand)}
 .banner { padding: 15px; border-radius: 8px; margin-bottom: 15px; }
 .banner.error { background: var(--danger-bg); border: 1px solid var(--danger); color: var(--danger); }
 
+/* Empfehlungskarten */
+.rec-card { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 16px; border-left: 5px solid var(--danger); }
+.rec-card.warn { border-left-color: var(--warning); }
+.rec-card.info { border-left-color: #2980b9; }
+.rec-card-title { font-weight: 700; font-size: 14px; color: var(--brand); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.rec-card-title .icon { font-size: 18px; }
+.rec-card-body { font-size: 13px; color: #555; line-height: 1.5; }
+.rec-card-value { font-size: 18px; font-weight: 800; color: var(--danger); margin: 10px 0; }
+.rec-card.warn .rec-card-value { color: var(--warning); }
+.rec-card.info .rec-card-value { color: #2980b9; }
+.rec-card-hint { font-size: 11px; color: #888; margin-top: 8px; font-style: italic; }
+
 @media(max-width: 900px) { .p3-grid, .tiles-p3, .risk-grid, .risk-grid-3 { grid-template-columns: 1fr; } }
 @media(max-width: 768px) { .tiles { grid-template-columns: 1fr; } .grid-3 { grid-template-columns: 1fr; } .chart-grid { grid-template-columns: 1fr; } }
 @media print { .no-print { display: none !important; } }

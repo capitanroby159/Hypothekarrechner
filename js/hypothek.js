@@ -12,7 +12,8 @@
     PENSION_AGE: 65,         // Pensionierungsalter
     MIN_AMORT_YEARS: 1,      // Minimale Amortisationsdauer
     DEFAULT_AMORT_YEARS: 15, // Standard-Amortisationsdauer
-    DEATH_CAPITAL_RATE: 0.065 // Kapitalisierungszins für Todesfallkapital
+    DEATH_CAPITAL_RATE: 0.065, // Kapitalisierungszins für Todesfallkapital
+    RESERVE_RATE: 0.10       // Empfohlene Liquiditätsreserve (10%)
   };
   
   const RATE_MAINT = CONFIG.RATE_OP + CONFIG.RATE_RENO;
@@ -22,15 +23,18 @@
   let chartP1 = null, chartP2Bar = null, chartP2Donut = null, chartP3Donut = null;
   let data = {};
   
+  // Risiko-Gaps speichern für Empfehlungen
+  let riskGaps = {
+    b1: { alv: 0, iv: 0, death: 0 },
+    b2: { alv: 0, iv: 0, death: 0 },
+    pension: { b1: 0, b2: 0, both: 0 },
+    crash: 0
+  };
+  
   // --- HELPER FUNKTIONEN ---
   const q = sel => document.querySelector(sel);
   const qAll = sel => document.querySelectorAll(sel);
   
-  /**
-   * Parst einen CHF-formatierten String zu einer Zahl
-   * @param {string|number} str - Der zu parsende Wert
-   * @returns {number} - Die geparste Zahl oder 0
-   */
   const parseCHF = str => {
     if (str === null || str === undefined) return 0;
     if (typeof str === 'number') return str;
@@ -39,11 +43,6 @@
     return isNaN(result) ? 0 : result;
   };
   
-  /**
-   * Formatiert eine Zahl als CHF-Währung
-   * @param {number} num - Die zu formatierende Zahl
-   * @returns {string} - Formatierter CHF-String
-   */
   const fmtCHF = num => {
     return new Intl.NumberFormat('de-CH', {
       style: 'currency',
@@ -52,41 +51,20 @@
     }).format(num || 0);
   };
   
-  /**
-   * Formatiert eine Zahl mit Tausendertrennzeichen
-   * @param {number} num - Die zu formatierende Zahl
-   * @returns {string} - Formatierte Zahl
-   */
   const fmtNumber = num => {
     return new Intl.NumberFormat('de-CH').format(num || 0).replace(/,/g, "'");
   };
   
-  /**
-   * Sicherer Elementzugriff mit Fallback
-   * @param {string} id - Element-ID
-   * @param {*} defaultVal - Standardwert falls Element nicht existiert
-   * @returns {number} - Der geparste Wert oder Standardwert
-   */
   const getVal = (id) => {
     const el = q(id);
     return el ? parseCHF(el.value) : 0;
   };
   
-  /**
-   * Setzt Textinhalt eines Elements sicher
-   * @param {string} selector - CSS-Selektor
-   * @param {string} text - Zu setzender Text
-   */
   const setText = (selector, text) => {
     const el = q(selector);
     if (el) el.textContent = text;
   };
   
-  /**
-   * Setzt Klasse eines Elements sicher
-   * @param {string} selector - CSS-Selektor
-   * @param {string} className - Zu setzende Klasse
-   */
   const setClass = (selector, className) => {
     const el = q(selector);
     if (el) el.className = className;
@@ -94,7 +72,6 @@
 
   // --- HAUPTBERECHNUNGEN ---
   function calcAll() {
-    // Einkommen beider Käufer
     const inc1 = getVal('#b1_income');
     const inc2 = getVal('#b2_income');
     const debt1 = getVal('#b1_debt');
@@ -106,22 +83,18 @@
     const totalDeductions = debt1 + debt2 + ali1 + ali2;
     const effectiveIncome = Math.max(0, totalIncome - totalDeductions);
 
-    // Vermögenswerte
     const sum_acc = getVal('#b1_asset_bank') + getVal('#b2_asset_bank');
     const sum_sec = getVal('#b1_asset_sec') + getVal('#b2_asset_sec');
     const sum_3a = getVal('#b1_asset_3a') + getVal('#b2_asset_3a');
     const sum_pk = getVal('#b1_asset_pk') + getVal('#b2_asset_pk');
     
-    // Geplanter Einsatz
     const inv_acc_total = getVal('#invest_total_hard');
     const inv_3a_total = getVal('#invest_total_3a');
     const inv_pk_total = getVal('#invest_total_pk');
 
-    // Objekt
     const price = getVal('#propertyPrice');
     const reno = getVal('#renovationCost');
     
-    // Kaufnebenkosten
     let fees = getVal('#fees_total_manual');
     if (fees === 0) {
       fees = getVal('#tax_transfer') + 
@@ -132,7 +105,6 @@
              getVal('#fee_pk_wef');
     }
 
-    // Berechnungen
     const totalInvest = price + reno;
     const investedSum = inv_acc_total + inv_3a_total + inv_pk_total;
     const mortgage = Math.max(0, totalInvest - investedSum);
@@ -141,23 +113,19 @@
     const delta80 = Math.max(0, mortgage - (totalInvest * (CONFIG.MAX_LTV / 100)));
     const cashNeeded = inv_acc_total + fees;
 
-    // Summenanzeigen aktualisieren
     setText('#sum_investedCapital', fmtCHF(investedSum));
     setText('#sum_buyingFees', fmtCHF(fees));
 
-    // Hypothekar-Aufteilung (1. & 2. Hypothek)
     const limit65 = totalInvest * 0.65;
     const hypo1 = Math.min(mortgage, limit65);
     const hypo2 = Math.max(0, mortgage - limit65);
     
-    // Alter und Amortisation berechnen
     let age = 40;
     const birthEl = q('#b1_birth');
     if (birthEl && birthEl.value) {
       const birthDate = new Date(birthEl.value);
       const today = new Date();
       age = today.getFullYear() - birthDate.getFullYear();
-      // Korrektur falls Geburtstag noch nicht war
       const monthDiff = today.getMonth() - birthDate.getMonth();
       if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
         age--;
@@ -167,55 +135,32 @@
     const yearsToRetirement = Math.max(CONFIG.MIN_AMORT_YEARS, CONFIG.PENSION_AGE - age);
     const amortYears = Math.min(CONFIG.DEFAULT_AMORT_YEARS, yearsToRetirement);
     
-    // Jährliche Kosten (kalkulatorisch)
     const yearlyInterest = mortgage * CONFIG.RATE_STRESS;
     const yearlyAmort = hypo2 > 0 ? hypo2 / amortYears : 0;
     const yearlyMaint = totalInvest * RATE_MAINT;
     const yearlyTotal = yearlyInterest + yearlyAmort + yearlyMaint;
     
-    // Monatliche Kosten
     const monthlyInterest = yearlyInterest / 12;
     const monthlyAmort = yearlyAmort / 12;
     const monthlyMaint = yearlyMaint / 12;
     const monthlyTotal = yearlyTotal / 12;
     
-    // Tragbarkeit
     const burden = effectiveIncome > 0 ? (yearlyTotal / effectiveIncome) * 100 : 0;
     const minIncome = yearlyTotal / (CONFIG.MAX_BURDEN / 100);
     
-    // Alle Daten speichern
     data = {
-      // Einkommen
       inc1, inc2, debt1, debt2, ali1, ali2,
       totalIncome, totalDeductions, effectiveIncome,
-      
-      // Vermögen
       sum_acc, sum_sec, sum_3a, sum_pk,
       inv_acc_total, inv_3a_total, inv_pk_total,
-      
-      // Objekt & Kosten
       price, reno, totalInvest, fees,
-      
-      // Finanzierung
       mortgage, ltv, investedSum,
       liquidLeft, delta80, cashNeeded,
-      
-      // Hypotheken
       hypo1, hypo2, amortYears,
-      
-      // Jährliche Kosten
       yearlyInterest, yearlyAmort, yearlyMaint, yearlyTotal,
-      
-      // Monatliche Kosten
       monthlyInterest, monthlyAmort, monthlyMaint, monthlyTotal,
-      
-      // Tragbarkeit
       burden, minIncome,
-      
-      // Metadaten
       age, yearsToRetirement,
-      
-      // Phase 5 (wird später gefüllt)
       tranches: [],
       p5_total: 0,
       p5_op: 0,
@@ -225,14 +170,9 @@
     return data;
   }
 
-  /**
-   * Validiert die Eingaben
-   * @returns {string[]} - Array mit Fehlermeldungen
-   */
   function validateInputs() {
     const errors = [];
     
-    // Verfügbares Kapital prüfen
     const availableHard = data.sum_acc + data.sum_sec;
     if (Math.round(data.inv_acc_total) > Math.round(availableHard)) {
       errors.push(`Fehler Konto: Einsatz (${fmtCHF(data.inv_acc_total)}) übersteigt verfügbares Kapital (${fmtCHF(availableHard)}).`);
@@ -246,19 +186,16 @@
       errors.push(`Fehler PK: Einsatz (${fmtCHF(data.inv_pk_total)}) übersteigt verfügbares Guthaben (${fmtCHF(data.sum_pk)}).`);
     }
     
-    // Mindestens 10% "harte" Eigenmittel
     const hardEquity = data.inv_acc_total + data.inv_3a_total;
     const minHardEquity = data.totalInvest * 0.10;
     if (hardEquity < (minHardEquity - 1)) {
       errors.push(`Zu wenig "harte Eigenmittel": Mindestens 10% (${fmtCHF(minHardEquity)}) erforderlich. Aktuell: ${fmtCHF(hardEquity)}.`);
     }
     
-    // Kaufpreis prüfen
     if (data.totalInvest <= 0) {
       errors.push('Bitte geben Sie einen gültigen Kaufpreis ein.');
     }
     
-    // Einkommen prüfen
     if (data.effectiveIncome <= 0) {
       errors.push('Das effektive Einkommen muss positiv sein.');
     }
@@ -277,11 +214,9 @@
     setText('#t1_cash', fmtCHF(data.cashNeeded));
     setText('#t1_delta', fmtCHF(data.delta80));
 
-    // KPI Status setzen
     setClass('#kpi1_mortgage', data.ltv <= CONFIG.MAX_LTV ? 'kpi ok' : 'kpi alert');
     setClass('#kpi1_liquidity', data.liquidLeft >= 0 ? 'kpi ok' : 'kpi alert');
     
-    // Liquiditäts-Hinweis
     const cashSub = q('#t1_cash')?.nextElementSibling;
     if (cashSub) {
       cashSub.textContent = data.liquidLeft < 0 
@@ -289,7 +224,6 @@
         : 'Einsatz + Gebühren';
     }
 
-    // Empfehlungs-Box
     const recBox = q('#recP1');
     const recBtn = q('#btnToPhase2');
     
@@ -353,6 +287,14 @@
   function renderRisk() {
     const targetTxt = `Soll: ${fmtCHF(data.minIncome)}`;
     
+    // Reset risk gaps
+    riskGaps = {
+      b1: { alv: 0, iv: 0, death: 0 },
+      b2: { alv: 0, iv: 0, death: 0 },
+      pension: { b1: 0, b2: 0, both: 0 },
+      crash: 0
+    };
+    
     // --- Käufer 1 Szenarien ---
     
     // Arbeitslosigkeit K1
@@ -364,7 +306,8 @@
     setText('#target_alv', targetTxt);
     
     if (data.minIncome > alvInc1) {
-      setText('#gap_alv', `-${fmtCHF(data.minIncome - alvInc1)}`);
+      riskGaps.b1.alv = data.minIncome - alvInc1;
+      setText('#gap_alv', `-${fmtCHF(riskGaps.b1.alv)}`);
       setClass('#risk_alv', 'risk-card alert');
       setText('#stat_alv', 'LÜCKE');
     } else {
@@ -379,7 +322,8 @@
     setText('#target_iv', targetTxt);
     
     if (data.minIncome > ivInc1) {
-      setText('#gap_iv', `-${fmtCHF(data.minIncome - ivInc1)}`);
+      riskGaps.b1.iv = data.minIncome - ivInc1;
+      setText('#gap_iv', `-${fmtCHF(riskGaps.b1.iv)}`);
       setClass('#risk_iv', 'risk-card warn');
       setText('#stat_iv', 'LÜCKE');
     } else {
@@ -394,8 +338,8 @@
     setText('#target_death', targetTxt);
     
     if (deathInc1 < data.minIncome) {
-      const deathCapitalNeeded = (data.minIncome - deathInc1) / CONFIG.DEATH_CAPITAL_RATE;
-      setText('#gap_death', fmtCHF(deathCapitalNeeded));
+      riskGaps.b1.death = (data.minIncome - deathInc1) / CONFIG.DEATH_CAPITAL_RATE;
+      setText('#gap_death', fmtCHF(riskGaps.b1.death));
       setClass('#risk_death', 'risk-card alert');
       setText('#stat_death', 'LÜCKE');
     } else {
@@ -407,6 +351,7 @@
     // Immobilien-Crash (-20%)
     const crashMax = data.totalInvest * 0.8 * (CONFIG.MAX_LTV / 100);
     const marginCall = Math.max(0, data.mortgage - crashMax);
+    riskGaps.crash = marginCall;
     
     setText('#val_crash', fmtCHF(crashMax));
     
@@ -439,7 +384,8 @@
       setText('#target_alv_b2', targetTxt);
       
       if (data.minIncome > alvInc2) {
-        setText('#gap_alv_b2', `-${fmtCHF(data.minIncome - alvInc2)}`);
+        riskGaps.b2.alv = data.minIncome - alvInc2;
+        setText('#gap_alv_b2', `-${fmtCHF(riskGaps.b2.alv)}`);
         setClass('#risk_alv_b2', 'risk-card alert');
         setText('#stat_alv_b2', 'LÜCKE');
       } else {
@@ -454,7 +400,8 @@
       setText('#target_iv_b2', targetTxt);
       
       if (data.minIncome > ivInc2) {
-        setText('#gap_iv_b2', `-${fmtCHF(data.minIncome - ivInc2)}`);
+        riskGaps.b2.iv = data.minIncome - ivInc2;
+        setText('#gap_iv_b2', `-${fmtCHF(riskGaps.b2.iv)}`);
         setClass('#risk_iv_b2', 'risk-card warn');
         setText('#stat_iv_b2', 'LÜCKE');
       } else {
@@ -469,8 +416,8 @@
       setText('#target_death_b2', targetTxt);
       
       if (deathInc2 < data.minIncome) {
-        const deathCapitalNeeded2 = (data.minIncome - deathInc2) / CONFIG.DEATH_CAPITAL_RATE;
-        setText('#gap_death_b2', fmtCHF(deathCapitalNeeded2));
+        riskGaps.b2.death = (data.minIncome - deathInc2) / CONFIG.DEATH_CAPITAL_RATE;
+        setText('#gap_death_b2', fmtCHF(riskGaps.b2.death));
         setClass('#risk_death_b2', 'risk-card alert');
         setText('#stat_death_b2', 'LÜCKE');
       } else {
@@ -496,11 +443,10 @@
     const work1 = data.inc1 - data.debt1 - data.ali1;
     const work2 = data.inc2 - data.debt2 - data.ali2;
     
-    // Kosten bei Pension (nur 1. Hypothek relevant)
     const costPension = (data.hypo1 * CONFIG.RATE_STRESS) + data.yearlyMaint;
     const targetPension = costPension / (CONFIG.MAX_BURDEN / 100);
     
-    const checkPension = (income, valId, gapId, statId, targetId) => {
+    const checkPension = (income, valId, gapId, statId, targetId, gapKey) => {
       setText(valId, fmtCHF(income));
       setText(targetId, `Soll: ${fmtCHF(targetPension)}`);
       
@@ -510,6 +456,7 @@
         const gap = Math.max(0, data.hypo1 - maxHypo);
         
         if (gap > 0) {
+          riskGaps.pension[gapKey] = gap;
           setText(gapId, fmtCHF(gap));
           setText(statId, 'LÜCKE');
           const statEl = q(statId);
@@ -528,9 +475,196 @@
       }
     };
     
-    checkPension(pen1 + work2, '#val_pen_1', '#gap_pen_1', '#stat_pen_1', '#target_pen_1');
-    checkPension(pen2 + work1, '#val_pen_2', '#gap_pen_2', '#stat_pen_2', '#target_pen_2');
-    checkPension(pen1 + pen2, '#val_pen_both', '#gap_pen_both', '#stat_pen_both', '#target_pen_both');
+    checkPension(pen1 + work2, '#val_pen_1', '#gap_pen_1', '#stat_pen_1', '#target_pen_1', 'b1');
+    checkPension(pen2 + work1, '#val_pen_2', '#gap_pen_2', '#stat_pen_2', '#target_pen_2', 'b2');
+    checkPension(pen1 + pen2, '#val_pen_both', '#gap_pen_both', '#stat_pen_both', '#target_pen_both', 'both');
+  }
+
+  // --- EMPFEHLUNGEN RENDERN ---
+  
+  function renderRecommendations() {
+    const b1Name = q('#b1_name')?.value?.trim() || 'Käufer 1';
+    const b2Name = q('#b2_name')?.value?.trim() || 'Käufer 2';
+    const hasB2 = data.inc2 > 0 || b2Name !== 'Käufer 2';
+    
+    let hasAnyRec = false;
+    
+    // --- Versicherungsempfehlungen Käufer 1 ---
+    const recB1Grid = q('#rec_insurance_b1_grid');
+    const recB1Section = q('#rec_insurance_b1');
+    
+    if (recB1Grid && recB1Section) {
+      recB1Grid.innerHTML = '';
+      let hasB1Recs = false;
+      
+      // Arbeitslosenversicherung (Erwerbsausfall)
+      if (riskGaps.b1.alv > 0) {
+        hasB1Recs = true;
+        recB1Grid.innerHTML += `
+          <div class="rec-card">
+            <div class="rec-card-title"><span class="icon">🛡️</span> Arbeitslosenversicherung</div>
+            <div class="rec-card-body">
+              Bei Arbeitslosigkeit fehlen jährlich Mittel zur Deckung der Hypothekarkosten.
+            </div>
+            <div class="rec-card-value">Deckungslücke: ${fmtCHF(riskGaps.b1.alv)} / Jahr</div>
+            <div class="rec-card-hint">Empfehlung: Prüfen Sie eine private Arbeitslosenversicherung oder bauen Sie Reserven auf.</div>
+          </div>
+        `;
+      }
+      
+      // Erwerbsunfähigkeitsversicherung
+      if (riskGaps.b1.iv > 0) {
+        hasB1Recs = true;
+        recB1Grid.innerHTML += `
+          <div class="rec-card warn">
+            <div class="rec-card-title"><span class="icon">🏥</span> Erwerbsunfähigkeitsversicherung</div>
+            <div class="rec-card-body">
+              Die IV- und PK-Leistungen decken bei Invalidität die Hypothekarkosten nicht vollständig.
+            </div>
+            <div class="rec-card-value">Deckungslücke: ${fmtCHF(riskGaps.b1.iv)} / Jahr</div>
+            <div class="rec-card-hint">Empfehlung: Erwerbsunfähigkeitsrente (Langzeit) mit entsprechender Deckungshöhe abschliessen.</div>
+          </div>
+        `;
+      }
+      
+      // Todesfallversicherung
+      if (riskGaps.b1.death > 0) {
+        hasB1Recs = true;
+        recB1Grid.innerHTML += `
+          <div class="rec-card">
+            <div class="rec-card-title"><span class="icon">💀</span> Todesfallrisikoversicherung</div>
+            <div class="rec-card-body">
+              Im Todesfall reichen die Hinterlassenenleistungen nicht aus, um die Tragbarkeit zu gewährleisten.
+            </div>
+            <div class="rec-card-value">Benötigtes Kapital: ${fmtCHF(riskGaps.b1.death)}</div>
+            <div class="rec-card-hint">Empfehlung: Todesfallrisikoversicherung mit Versicherungssumme gemäss Analyse.</div>
+          </div>
+        `;
+      }
+      
+      recB1Section.style.display = hasB1Recs ? 'block' : 'none';
+      if (hasB1Recs) hasAnyRec = true;
+    }
+    
+    // --- Versicherungsempfehlungen Käufer 2 ---
+    const recB2Grid = q('#rec_insurance_b2_grid');
+    const recB2Section = q('#rec_insurance_b2');
+    
+    if (recB2Grid && recB2Section && hasB2) {
+      recB2Grid.innerHTML = '';
+      let hasB2Recs = false;
+      
+      if (riskGaps.b2.alv > 0) {
+        hasB2Recs = true;
+        recB2Grid.innerHTML += `
+          <div class="rec-card">
+            <div class="rec-card-title"><span class="icon">🛡️</span> Arbeitslosenversicherung</div>
+            <div class="rec-card-body">
+              Bei Arbeitslosigkeit fehlen jährlich Mittel zur Deckung der Hypothekarkosten.
+            </div>
+            <div class="rec-card-value">Deckungslücke: ${fmtCHF(riskGaps.b2.alv)} / Jahr</div>
+            <div class="rec-card-hint">Empfehlung: Prüfen Sie eine private Arbeitslosenversicherung oder bauen Sie Reserven auf.</div>
+          </div>
+        `;
+      }
+      
+      if (riskGaps.b2.iv > 0) {
+        hasB2Recs = true;
+        recB2Grid.innerHTML += `
+          <div class="rec-card warn">
+            <div class="rec-card-title"><span class="icon">🏥</span> Erwerbsunfähigkeitsversicherung</div>
+            <div class="rec-card-body">
+              Die IV- und PK-Leistungen decken bei Invalidität die Hypothekarkosten nicht vollständig.
+            </div>
+            <div class="rec-card-value">Deckungslücke: ${fmtCHF(riskGaps.b2.iv)} / Jahr</div>
+            <div class="rec-card-hint">Empfehlung: Erwerbsunfähigkeitsrente (Langzeit) mit entsprechender Deckungshöhe abschliessen.</div>
+          </div>
+        `;
+      }
+      
+      if (riskGaps.b2.death > 0) {
+        hasB2Recs = true;
+        recB2Grid.innerHTML += `
+          <div class="rec-card">
+            <div class="rec-card-title"><span class="icon">💀</span> Todesfallrisikoversicherung</div>
+            <div class="rec-card-body">
+              Im Todesfall reichen die Hinterlassenenleistungen nicht aus, um die Tragbarkeit zu gewährleisten.
+            </div>
+            <div class="rec-card-value">Benötigtes Kapital: ${fmtCHF(riskGaps.b2.death)}</div>
+            <div class="rec-card-hint">Empfehlung: Todesfallrisikoversicherung mit Versicherungssumme gemäss Analyse.</div>
+          </div>
+        `;
+      }
+      
+      recB2Section.style.display = hasB2Recs ? 'block' : 'none';
+      if (hasB2Recs) hasAnyRec = true;
+    } else if (recB2Section) {
+      recB2Section.style.display = 'none';
+    }
+    
+    // --- Kapitalaufbau-Empfehlungen ---
+    const recCapitalGrid = q('#rec_capital_grid');
+    
+    if (recCapitalGrid) {
+      recCapitalGrid.innerHTML = '';
+      
+      // Pensionierungslücke
+      const maxPensionGap = Math.max(riskGaps.pension.b1, riskGaps.pension.b2, riskGaps.pension.both);
+      if (maxPensionGap > 0) {
+        hasAnyRec = true;
+        const yearsUntilPension = Math.max(1, CONFIG.PENSION_AGE - data.age);
+        
+        recCapitalGrid.innerHTML += `
+          <div class="rec-card warn">
+            <div class="rec-card-title"><span class="icon">🎯</span> Sparziel Pensionierung</div>
+            <div class="rec-card-body">
+              Bis zur Pensionierung muss Kapital angespart werden, um die Hypothek auf ein tragbares Niveau zu reduzieren.
+            </div>
+            <div class="rec-card-value">Benötigtes Kapital: ${fmtCHF(maxPensionGap)}</div>
+            <div class="rec-card-hint">Bis Alter 65 (in ca. ${yearsUntilPension} Jahren) ansparen oder Hypothek reduzieren.</div>
+          </div>
+        `;
+      }
+      
+      // Immobilien-/Zinsrisiko Reserve
+      const recommendedReserve = data.totalInvest * CONFIG.RESERVE_RATE;
+      const currentLiquidity = data.liquidLeft;
+      const reserveGap = recommendedReserve - Math.max(0, currentLiquidity);
+      
+      recCapitalGrid.innerHTML += `
+        <div class="rec-card info">
+          <div class="rec-card-title"><span class="icon">🏦</span> Liquiditätsreserve</div>
+          <div class="rec-card-body">
+            Als Schutz gegen Immobilien- und Zinsrisiken empfehlen wir eine Liquiditätsreserve von 10% des Immobilienwerts.
+          </div>
+          <div class="rec-card-value">Empfohlene Reserve: ${fmtCHF(recommendedReserve)}</div>
+          <div class="rec-card-hint">${reserveGap > 0 
+            ? `Nach Kauf fehlen noch ${fmtCHF(reserveGap)} – bitte ansparen.` 
+            : `Ihre verbleibende Liquidität von ${fmtCHF(currentLiquidity)} deckt diese Reserve.`}</div>
+        </div>
+      `;
+      
+      // Margin-Call Risiko
+      if (riskGaps.crash > 0) {
+        hasAnyRec = true;
+        recCapitalGrid.innerHTML += `
+          <div class="rec-card">
+            <div class="rec-card-title"><span class="icon">📉</span> Immobilienrisiko (Margin Call)</div>
+            <div class="rec-card-body">
+              Bei einem Wertverlust von 20% würde die Bank zusätzliches Kapital verlangen (Margin Call).
+            </div>
+            <div class="rec-card-value">Risikobetrag: ${fmtCHF(riskGaps.crash)}</div>
+            <div class="rec-card-hint">Empfehlung: Diesen Betrag als zusätzliche Reserve halten oder Belehnung reduzieren.</div>
+          </div>
+        `;
+      }
+    }
+    
+    // Keine Empfehlungen nötig?
+    const recNone = q('#rec_none');
+    if (recNone) {
+      recNone.style.display = hasAnyRec ? 'none' : 'block';
+    }
   }
 
   // --- CHART FUNKTIONEN ---
@@ -737,7 +871,6 @@
       });
     });
     
-    // Delta-Anzeige
     const delta = data.mortgage - totalAmount;
     const deltaDisplay = q('#p3_deltaDisplay');
     if (deltaDisplay) {
@@ -750,7 +883,6 @@
       }
     }
     
-    // Effektiver Zins (inkl. nicht verteiltem Betrag mit 2.5%)
     let effectiveInterest = totalInterest;
     if (delta > 0) {
       effectiveInterest += delta * 0.025;
@@ -759,23 +891,19 @@
     const mixRate = data.mortgage > 0 ? effectiveInterest / data.mortgage : 0;
     currentMixRate = mixRate;
     
-    // Risiko-Berechnung aktualisieren falls sichtbar
     const riskSection = q('#sectionResultsRisk');
     if (riskSection && !riskSection.classList.contains('collapsed')) {
       renderRisk();
     }
     
-    // Monatliche Kosten berechnen
     const monthlyInterest = effectiveInterest / 12;
     const monthlyMaint = (data.totalInvest * RATE_MAINT) / 12;
     const monthlyTotal = monthlyInterest + data.monthlyAmort + monthlyMaint;
     
-    // Phase 5 Daten speichern
     data.p5_total = monthlyTotal;
     data.p5_op = monthlyMaint * (CONFIG.RATE_OP / RATE_MAINT);
     data.p5_reno = monthlyMaint * (CONFIG.RATE_RENO / RATE_MAINT);
 
-    // Anzeige aktualisieren
     setText('#p3_targetHypo', fmtCHF(data.mortgage));
     setText('#t3_monthlyTotalReal', fmtCHF(monthlyTotal));
     setText('#t3_mixRate', `Mischzins: ${(mixRate * 100).toFixed(2)}%`);
@@ -784,7 +912,6 @@
     setText('#t3_opCost', fmtCHF(data.p5_op));
     setText('#t3_renoReserve', fmtCHF(data.p5_reno));
     
-    // Tragbarkeit mit realem Zins
     const realBurden = (monthlyTotal * 12 / data.effectiveIncome) * 100;
     const kpi3 = q('#kpi3_total');
     if (kpi3) {
@@ -800,7 +927,6 @@
     
     grid.innerHTML = '';
     
-    // Tranchen anzeigen
     if (data.tranches && data.tranches.length > 0) {
       data.tranches.forEach(tranche => {
         let warning = '';
@@ -819,7 +945,6 @@
       });
     }
     
-    // Amortisation
     grid.innerHTML += `
       <div class="kpi">
         <div class="kpi-label">Amortisation</div>
@@ -828,7 +953,6 @@
       </div>
     `;
     
-    // Unterhalt & Rücklagen
     grid.innerHTML += `
       <div class="kpi">
         <div class="kpi-label">Unterhalt & Rücklagen</div>
@@ -837,7 +961,6 @@
       </div>
     `;
     
-    // Total-Kachel
     grid.innerHTML += `
       <div class="kpi highlight">
         <div class="kpi-label">Total Monatliche Wohnkosten</div>
@@ -845,6 +968,9 @@
         <div class="kpi-sub">Ihre effektive Belastung</div>
       </div>
     `;
+    
+    // Empfehlungen rendern
+    renderRecommendations();
   }
 
   // --- TRANCHEN-VERWALTUNG ---
@@ -877,7 +1003,6 @@
       <button class="btn-del-tranche" title="Tranche entfernen">×</button>
     `;
     
-    // Event Listeners
     const amountInput = row.querySelector('.tr-amount');
     const rateInput = row.querySelector('.tr-rate');
     const deleteBtn = row.querySelector('.btn-del-tranche');
@@ -906,7 +1031,6 @@
     const rows = container.children;
     if (rows.length < 2) return;
     
-    // Summe aller Tranchen ausser der ersten
     let sum = 0;
     for (let i = 1; i < rows.length; i++) {
       const amountEl = rows[i].querySelector('.tr-amount');
@@ -915,7 +1039,6 @@
       }
     }
     
-    // Erste Tranche = Differenz
     const firstAmount = rows[0].querySelector('.tr-amount');
     if (firstAmount) {
       firstAmount.value = fmtCHF(Math.max(0, data.mortgage - sum));
@@ -957,7 +1080,6 @@
   // --- EVENT LISTENERS ---
   
   function initEventListeners() {
-    // Money-Felder formatieren
     qAll('.money').forEach(el => {
       el.addEventListener('change', (e) => {
         e.target.value = fmtNumber(parseCHF(e.target.value));
@@ -965,7 +1087,6 @@
       });
     });
     
-    // Phase 1 starten
     const btnCalcP1 = q('#btnCalcPhase1');
     if (btnCalcP1) {
       btnCalcP1.addEventListener('click', () => {
@@ -988,7 +1109,6 @@
       });
     }
     
-    // Daten bearbeiten
     const btnEditP1 = q('#btnEditP1');
     if (btnEditP1) {
       btnEditP1.addEventListener('click', () => {
@@ -1003,7 +1123,6 @@
       });
     }
     
-    // Zu Phase 2
     const btnToP2 = q('#btnToPhase2');
     if (btnToP2) {
       btnToP2.addEventListener('click', () => {
@@ -1013,7 +1132,6 @@
       });
     }
     
-    // Zu Phase 3 (Risiko)
     const btnToP3 = q('#btnToPhase3');
     if (btnToP3) {
       btnToP3.addEventListener('click', () => {
@@ -1023,7 +1141,6 @@
       });
     }
     
-    // Zu Phase 4 (Produkt)
     const btnToP4 = q('#btnToPhase4');
     if (btnToP4) {
       btnToP4.addEventListener('click', () => {
@@ -1033,7 +1150,6 @@
       });
     }
     
-    // Zu Phase 5 (Zusammenfassung)
     const btnToP5 = q('#btnToPhase5');
     if (btnToP5) {
       btnToP5.addEventListener('click', () => {
@@ -1044,7 +1160,6 @@
       });
     }
     
-    // Zurück-Buttons
     const btnBackToP2 = q('#btnBackToP2');
     if (btnBackToP2) {
       btnBackToP2.addEventListener('click', () => {
@@ -1072,7 +1187,6 @@
       });
     }
     
-    // Tranche hinzufügen
     const btnAddTranche = q('#btnAddTranche');
     if (btnAddTranche) {
       btnAddTranche.addEventListener('click', () => {
@@ -1085,7 +1199,6 @@
   // --- INITIALISIERUNG ---
   
   function init() {
-    // Standard-Geburtsdatum setzen (35 Jahre alt)
     const defaultBirthdate = new Date();
     defaultBirthdate.setFullYear(defaultBirthdate.getFullYear() - 35);
     const dateStr = defaultBirthdate.toISOString().split('T')[0];
@@ -1096,16 +1209,12 @@
     if (b1Birth && !b1Birth.value) b1Birth.value = dateStr;
     if (b2Birth && !b2Birth.value) b2Birth.value = dateStr;
     
-    // Event Listeners initialisieren
     initEventListeners();
-    
-    // Initiale Berechnung
     calcAll();
     
     console.log('Hypothekar-Cockpit initialisiert');
   }
 
-  // DOM Ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
