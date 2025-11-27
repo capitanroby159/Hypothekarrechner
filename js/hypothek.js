@@ -109,7 +109,7 @@
     const investedSum = inv_acc_total + inv_3a_total + inv_pk_total;
     const mortgage = Math.max(0, totalInvest - investedSum);
     const ltv = totalInvest > 0 ? (mortgage / totalInvest) * 100 : 0;
-    const liquidLeft = (sum_acc + sum_sec) - (inv_acc_total + fees);
+    const liquidLeft = sum_acc - (inv_acc_total + fees);
     const delta80 = Math.max(0, mortgage - (totalInvest * (CONFIG.MAX_LTV / 100)));
     const cashNeeded = inv_acc_total + fees;
 
@@ -241,7 +241,7 @@
         setText('#recP1_text', `Es fehlen ${fmtCHF(Math.abs(data.liquidLeft))} zur Deckung von Eigenmitteleinsatz und Kaufnebenkosten.`);
       } else {
         recBox.classList.add('ok');
-        setText('#recP1_status', 'Machbarkeit OK ✓');
+        setText('#recP1_status', 'Machbarkeit OK');
         setText('#recP1_text', 'Die Finanzierung ist grundsätzlich machbar. Prüfen Sie nun die Tragbarkeit.');
         if (recBtn) recBtn.style.display = 'block';
       }
@@ -275,7 +275,7 @@
         setText('#recP2_text', `Die Tragbarkeit liegt bei ${data.burden.toFixed(1)}% - knapp unter dem Maximum. Beachten Sie die Risikoszenarien.`);
       } else {
         recBox.classList.add('ok');
-        setText('#recP2_status', 'Tragbarkeit OK ✓');
+        setText('#recP2_status', 'Tragbarkeit OK');
         setText('#recP2_text', `Mit ${data.burden.toFixed(1)}% liegt die Belastung komfortabel unter dem Maximum von ${CONFIG.MAX_BURDEN}%.`);
       }
     }
@@ -502,7 +502,7 @@
         hasB1Recs = true;
         recB1Grid.innerHTML += `
           <div class="rec-card">
-            <div class="rec-card-title"><span class="icon">🛡️</span> Arbeitslosenversicherung</div>
+            <div class="rec-card-title">Arbeitslosenversicherung</div>
             <div class="rec-card-body">
               Bei Arbeitslosigkeit fehlen jährlich Mittel zur Deckung der Hypothekarkosten.
             </div>
@@ -517,7 +517,7 @@
         hasB1Recs = true;
         recB1Grid.innerHTML += `
           <div class="rec-card warn">
-            <div class="rec-card-title"><span class="icon">🏥</span> Erwerbsunfähigkeitsversicherung</div>
+            <div class="rec-card-title">Erwerbsunfähigkeitsversicherung</div>
             <div class="rec-card-body">
               Die IV- und PK-Leistungen decken bei Invalidität die Hypothekarkosten nicht vollständig.
             </div>
@@ -532,7 +532,7 @@
         hasB1Recs = true;
         recB1Grid.innerHTML += `
           <div class="rec-card">
-            <div class="rec-card-title"><span class="icon">💀</span> Todesfallrisikoversicherung</div>
+            <div class="rec-card-title">Todesfallrisikoversicherung</div>
             <div class="rec-card-body">
               Im Todesfall reichen die Hinterlassenenleistungen nicht aus, um die Tragbarkeit zu gewährleisten.
             </div>
@@ -558,7 +558,7 @@
         hasB2Recs = true;
         recB2Grid.innerHTML += `
           <div class="rec-card">
-            <div class="rec-card-title"><span class="icon">🛡️</span> Arbeitslosenversicherung</div>
+            <div class="rec-card-title">Arbeitslosenversicherung</div>
             <div class="rec-card-body">
               Bei Arbeitslosigkeit fehlen jährlich Mittel zur Deckung der Hypothekarkosten.
             </div>
@@ -572,7 +572,7 @@
         hasB2Recs = true;
         recB2Grid.innerHTML += `
           <div class="rec-card warn">
-            <div class="rec-card-title"><span class="icon">🏥</span> Erwerbsunfähigkeitsversicherung</div>
+            <div class="rec-card-title">Erwerbsunfähigkeitsversicherung</div>
             <div class="rec-card-body">
               Die IV- und PK-Leistungen decken bei Invalidität die Hypothekarkosten nicht vollständig.
             </div>
@@ -586,7 +586,7 @@
         hasB2Recs = true;
         recB2Grid.innerHTML += `
           <div class="rec-card">
-            <div class="rec-card-title"><span class="icon">💀</span> Todesfallrisikoversicherung</div>
+            <div class="rec-card-title">Todesfallrisikoversicherung</div>
             <div class="rec-card-body">
               Im Todesfall reichen die Hinterlassenenleistungen nicht aus, um die Tragbarkeit zu gewährleisten.
             </div>
@@ -613,17 +613,35 @@
       if (maxPensionGap > 0) {
         hasAnyRec = true;
         const yearsUntilPension = Math.max(1, CONFIG.PENSION_AGE - data.age);
+        const currentLiquidity = data.liquidLeft;
+        const stillNeeded = Math.max(0, maxPensionGap - currentLiquidity);
         
-        recCapitalGrid.innerHTML += `
-          <div class="rec-card warn">
-            <div class="rec-card-title"><span class="icon">🎯</span> Sparziel Pensionierung</div>
-            <div class="rec-card-body">
-              Bis zur Pensionierung muss Kapital angespart werden, um die Hypothek auf ein tragbares Niveau zu reduzieren.
+        if (currentLiquidity > 0) {
+          recCapitalGrid.innerHTML += `
+            <div class="rec-card warn">
+              <div class="rec-card-title">Sparziel Pensionierung</div>
+              <div class="rec-card-body">
+                Sie müssen bis zur Pensionierung Kapital ansparen, um die Hypothek tragbar zu halten.
+              </div>
+              <div class="rec-card-body" style="margin-top:10px; font-weight:600; color:#d32f2f;">
+                Bereits vorhanden: ${fmtCHF(currentLiquidity)}
+              </div>
+              <div class="rec-card-value">Noch notwendig: ${fmtCHF(stillNeeded)}</div>
+              <div class="rec-card-hint">Bis Alter 65 (in ca. ${yearsUntilPension} Jahren) ansparen oder Hypothek reduzieren.</div>
             </div>
-            <div class="rec-card-value">Benötigtes Kapital: ${fmtCHF(maxPensionGap)}</div>
-            <div class="rec-card-hint">Bis Alter 65 (in ca. ${yearsUntilPension} Jahren) ansparen oder Hypothek reduzieren.</div>
-          </div>
-        `;
+          `;
+        } else {
+          recCapitalGrid.innerHTML += `
+            <div class="rec-card warn">
+              <div class="rec-card-title">Sparziel Pensionierung</div>
+              <div class="rec-card-body">
+                Sie müssen bis zur Pensionierung Kapital ansparen, um die Hypothek tragbar zu halten.
+              </div>
+              <div class="rec-card-value">Benötigtes Kapital: ${fmtCHF(maxPensionGap)}</div>
+              <div class="rec-card-hint">Bis Alter 65 (in ca. ${yearsUntilPension} Jahren) ansparen oder Hypothek reduzieren.</div>
+            </div>
+          `;
+        }
       }
       
       // Immobilien-/Zinsrisiko Reserve
@@ -631,32 +649,95 @@
       const currentLiquidity = data.liquidLeft;
       const reserveGap = recommendedReserve - Math.max(0, currentLiquidity);
       
-      recCapitalGrid.innerHTML += `
-        <div class="rec-card info">
-          <div class="rec-card-title"><span class="icon">🏦</span> Liquiditätsreserve</div>
-          <div class="rec-card-body">
-            Als Schutz gegen Immobilien- und Zinsrisiken empfehlen wir eine Liquiditätsreserve von 10% des Immobilienwerts.
+      if (currentLiquidity >= recommendedReserve) {
+        // Gutes Polster vorhanden
+        recCapitalGrid.innerHTML += `
+          <div class="rec-card ok" style="border-left-color: var(--ok);">
+            <div class="rec-card-title">Liquiditätsreserve</div>
+            <div class="rec-card-body">
+              Als Schutz gegen Immobilien- und Zinsrisiken empfehlen wir eine Liquiditätsreserve von 10% des Immobilienwerts.
+            </div>
+            <div class="rec-card-body" style="margin-top:10px; font-weight:600; color: var(--ok);">
+              Bereits vorhanden: ${fmtCHF(currentLiquidity)}
+            </div>
+            <div class="rec-card-value" style="color: var(--ok);">Gutes Polster: +${fmtCHF(currentLiquidity - recommendedReserve)}</div>
+            <div class="rec-card-hint">Sie haben ausreichend Liquidität für Risiken und unerwartete Ausgaben.</div>
           </div>
-          <div class="rec-card-value">Empfohlene Reserve: ${fmtCHF(recommendedReserve)}</div>
-          <div class="rec-card-hint">${reserveGap > 0 
-            ? `Nach Kauf fehlen noch ${fmtCHF(reserveGap)} – bitte ansparen.` 
-            : `Ihre verbleibende Liquidität von ${fmtCHF(currentLiquidity)} deckt diese Reserve.`}</div>
-        </div>
-      `;
+        `;
+      } else if (currentLiquidity > 0) {
+        // Teilweise vorhanden
+        recCapitalGrid.innerHTML += `
+          <div class="rec-card info">
+            <div class="rec-card-title">Liquiditätsreserve</div>
+            <div class="rec-card-body">
+              Als Schutz gegen Immobilien- und Zinsrisiken empfehlen wir eine Liquiditätsreserve von 10% des Immobilienwerts.
+            </div>
+            <div class="rec-card-body" style="margin-top:10px; font-weight:600; color: #2980b9;">
+              Bereits vorhanden: ${fmtCHF(currentLiquidity)}
+            </div>
+            <div class="rec-card-value" style="color: #2980b9;">Noch benötigt: ${fmtCHF(reserveGap)}</div>
+            <div class="rec-card-hint">Nach Kauf noch ${fmtCHF(reserveGap)} ansparen, um die empfohlene Reserve zu erreichen.</div>
+          </div>
+        `;
+      } else {
+        // Keine Reserve vorhanden
+        recCapitalGrid.innerHTML += `
+          <div class="rec-card warn">
+            <div class="rec-card-title">Liquiditätsreserve</div>
+            <div class="rec-card-body">
+              Als Schutz gegen Immobilien- und Zinsrisiken empfehlen wir eine Liquiditätsreserve von 10% des Immobilienwerts.
+            </div>
+            <div class="rec-card-value">Empfohlene Reserve: ${fmtCHF(recommendedReserve)}</div>
+            <div class="rec-card-hint">Nach dem Kauf müssen Sie diese Reserve aufbauen für unerwartete Ausgaben und Zinsanpassungen.</div>
+          </div>
+        `;
+      }
       
       // Margin-Call Risiko
       if (riskGaps.crash > 0) {
         hasAnyRec = true;
-        recCapitalGrid.innerHTML += `
-          <div class="rec-card">
-            <div class="rec-card-title"><span class="icon">📉</span> Immobilienrisiko (Margin Call)</div>
-            <div class="rec-card-body">
-              Bei einem Wertverlust von 20% würde die Bank zusätzliches Kapital verlangen (Margin Call).
+        const currentLiquidityForCrash = data.liquidLeft;
+        
+        if (currentLiquidityForCrash >= riskGaps.crash) {
+          recCapitalGrid.innerHTML += `
+            <div class="rec-card ok" style="border-left-color: var(--ok);">
+              <div class="rec-card-title">Immobilienrisiko (Margin Call)</div>
+              <div class="rec-card-body">
+                Bei einem Wertverlust von 20% würde die Bank zusätzliches Kapital verlangen (Margin Call).
+              </div>
+              <div class="rec-card-body" style="margin-top:10px; font-weight:600; color: var(--ok);">
+                Bereits vorhanden: ${fmtCHF(currentLiquidityForCrash)}
+              </div>
+              <div class="rec-card-value" style="color: var(--ok);">Gedeckt mit Polster: +${fmtCHF(currentLiquidityForCrash - riskGaps.crash)}</div>
+              <div class="rec-card-hint">Sie haben ausreichende Mittel für dieses Szenario.</div>
             </div>
-            <div class="rec-card-value">Risikobetrag: ${fmtCHF(riskGaps.crash)}</div>
-            <div class="rec-card-hint">Empfehlung: Diesen Betrag als zusätzliche Reserve halten oder Belehnung reduzieren.</div>
-          </div>
-        `;
+          `;
+        } else if (currentLiquidityForCrash > 0) {
+          recCapitalGrid.innerHTML += `
+            <div class="rec-card">
+              <div class="rec-card-title">Immobilienrisiko (Margin Call)</div>
+              <div class="rec-card-body">
+                Bei einem Wertverlust von 20% würde die Bank zusätzliches Kapital verlangen (Margin Call).
+              </div>
+              <div class="rec-card-body" style="margin-top:10px; font-weight:600; color: #d32f2f;">
+                Bereits vorhanden: ${fmtCHF(currentLiquidityForCrash)}
+              </div>
+              <div class="rec-card-value">Noch benötigt: ${fmtCHF(riskGaps.crash - currentLiquidityForCrash)}</div>
+              <div class="rec-card-hint">Sie sollten zusätzliches Kapital aufbauen oder die Belehnung reduzieren.</div>
+            </div>
+          `;
+        } else {
+          recCapitalGrid.innerHTML += `
+            <div class="rec-card">
+              <div class="rec-card-title">Immobilienrisiko (Margin Call)</div>
+              <div class="rec-card-body">
+                Bei einem Wertverlust von 20% würde die Bank zusätzliches Kapital verlangen (Margin Call).
+              </div>
+              <div class="rec-card-value">Risikobetrag: ${fmtCHF(riskGaps.crash)}</div>
+              <div class="rec-card-hint">Sie sollten diesen Betrag als Reserve halten oder die Belehnung reduzieren.</div>
+            </div>
+          `;
+        }
       }
     }
     
@@ -878,7 +959,7 @@
         deltaDisplay.textContent = `Differenz: ${fmtCHF(delta)}`;
         deltaDisplay.style.color = '#d32f2f';
       } else {
-        deltaDisplay.textContent = '✓ Vollständig verteilt';
+        deltaDisplay.textContent = 'Vollständig verteilt';
         deltaDisplay.style.color = '#198754';
       }
     }
@@ -931,7 +1012,7 @@
       data.tranches.forEach(tranche => {
         let warning = '';
         if (tranche.product.includes('SARON')) {
-          warning = `<div style="font-size:11px; color:#e67e22; margin-top:4px;">⚠️ Variable Rate</div>`;
+          warning = `<div style="font-size:11px; color:#e67e22; margin-top:4px;">Variable Rate</div>`;
         }
         
         grid.innerHTML += `
