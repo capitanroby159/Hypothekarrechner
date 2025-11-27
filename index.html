@@ -1,0 +1,525 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Schweizer Hypotheken-Cockpit</title>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+  <link rel="stylesheet" href="./css/styles.css">
+</head>
+<body>
+
+<main class="container">
+  <h1 class="no-print">Schweizer Hypotheken-Cockpit</h1>
+  
+  <div class="steps no-print">
+    <div id="step1-ind" class="step active">1. Daten</div>
+    <div id="step2-ind" class="step">2. Tragbarkeit</div>
+    <div id="step3-ind" class="step">3. Risiken</div>
+    <div id="step4-ind" class="step">4. Produkt</div>
+    <div id="step5-ind" class="step">5. Zusammenfassung</div>
+  </div>
+
+  <!-- PHASE 1: DATENEINGABE -->
+  <div id="sectionInputs" class="collapsible">
+    <form id="mainForm" novalidate>
+      
+      <div class="buyer-grid-container">
+        <div class="buyer-header-label"></div>
+        <div class="buyer-header">Käufer 1 (Hauptverdiener)</div>
+        <div class="buyer-header">Käufer 2 (Partner/in)</div>
+
+        <div class="buyer-separator">Personalien & Wohnsituation</div>
+        
+        <div class="buyer-label">Name / Vorname</div>
+        <div><input type="text" id="b1_name" placeholder="Muster Hans"></div>
+        <div><input type="text" id="b2_name" placeholder="Muster Anna"></div>
+        
+        <div class="buyer-label">Strasse / Nr.</div>
+        <div><input type="text" id="b1_address" placeholder="Musterstrasse 1"></div>
+        <div><input type="text" id="b2_address" placeholder="Musterstrasse 1"></div>
+
+        <div class="buyer-label">PLZ / Ort</div>
+        <div><input type="text" id="b1_city" placeholder="8000 Zürich"></div>
+        <div><input type="text" id="b2_city" placeholder="8000 Zürich"></div>
+
+        <div class="buyer-label">Geburtsdatum</div>
+        <div><input type="date" id="b1_birth"></div>
+        <div><input type="date" id="b2_birth"></div>
+
+        <div class="buyer-label">Zivilstand</div>
+        <div>
+          <select id="b1_civil">
+            <option value="ledig">Ledig</option>
+            <option value="verheiratet">Verheiratet</option>
+            <option value="konkubinat">Konkubinat</option>
+            <option value="geschieden">Geschieden</option>
+          </select>
+        </div>
+        <div>
+          <select id="b2_civil">
+            <option value="">— Bitte wählen —</option>
+            <option value="ledig">Ledig</option>
+            <option value="verheiratet">Verheiratet</option>
+            <option value="konkubinat">Konkubinat</option>
+            <option value="geschieden">Geschieden</option>
+          </select>
+        </div>
+
+        <div class="buyer-label">Kinder (Anzahl)</div>
+        <div><input type="number" id="b1_kids" value="0" min="0" max="10"></div>
+        <div><input type="number" id="b2_kids" value="0" min="0" max="10"></div>
+
+        <div class="buyer-separator">Beruf & Einkommen</div>
+        
+        <div class="buyer-label">Beruf / Funktion</div>
+        <div><input type="text" id="b1_job" placeholder="z.B. Architekt"></div>
+        <div><input type="text" id="b2_job" placeholder="z.B. Lehrerin"></div>
+
+        <div class="buyer-label">Angestellt seit</div>
+        <div><input type="text" id="b1_since" placeholder="MM.JJJJ"></div>
+        <div><input type="text" id="b2_since" placeholder="MM.JJJJ"></div>
+        
+        <div class="buyer-label">Arbeitgeber</div>
+        <div><input type="text" id="b1_employer" placeholder="Firma AG"></div>
+        <div><input type="text" id="b2_employer" placeholder="Firma AG"></div>
+
+        <div class="buyer-label">Jahreseinkommen (Brutto)</div>
+        <div><input type="text" id="b1_income" class="money" value="120'000"></div>
+        <div><input type="text" id="b2_income" class="money" value="60'000"></div>
+
+        <div class="buyer-separator">Finanzielle Verpflichtungen</div>
+        
+        <div class="buyer-label">Laufende Kredite/Leasing (Jahr)</div>
+        <div><input type="text" id="b1_debt" class="money" value="0"></div>
+        <div><input type="text" id="b2_debt" class="money" value="0"></div>
+
+        <div class="buyer-label">Alimente (Verpflichtung/Jahr)</div>
+        <div><input type="text" id="b1_alimony" class="money" value="0"></div>
+        <div><input type="text" id="b2_alimony" class="money" value="0"></div>
+
+        <div class="buyer-separator">Verfügbares Vermögen (Bestand)</div>
+        
+        <div class="buyer-label">Konto / Bankguthaben</div>
+        <div><input type="text" id="b1_asset_bank" class="money" value="80'000"></div>
+        <div><input type="text" id="b2_asset_bank" class="money" value="40'000"></div>
+
+        <div class="buyer-label">Wertschriften / Depot</div>
+        <div><input type="text" id="b1_asset_sec" class="money" value="0"></div>
+        <div><input type="text" id="b2_asset_sec" class="money" value="0"></div>
+
+        <div class="buyer-label">Säule 3a</div>
+        <div><input type="text" id="b1_asset_3a" class="money" value="20'000"></div>
+        <div><input type="text" id="b2_asset_3a" class="money" value="20'000"></div>
+
+        <div class="buyer-label">PK Guthaben (Vorbezug möglich)</div>
+        <div><input type="text" id="b1_asset_pk" class="money" value="150'000"></div>
+        <div><input type="text" id="b2_asset_pk" class="money" value="50'000"></div>
+
+        <div class="buyer-separator">Vorsorgeleistungen (lt. Ausweis)</div>
+        
+        <div class="buyer-label">Altersrente (Prognose p.a.)</div>
+        <div><input type="text" id="b1_pension_old" class="money" value="70'000" style="background:#f0f7ff; border-color:#b0c4de;"></div>
+        <div><input type="text" id="b2_pension_old" class="money" value="35'000" style="background:#f0f7ff; border-color:#b0c4de;"></div>
+
+        <div class="buyer-label">Invalidenrente (p.a.)</div>
+        <div><input type="text" id="b1_pension_inv" class="money" value="70'000" style="background:#f0f7ff"></div>
+        <div><input type="text" id="b2_pension_inv" class="money" value="30'000" style="background:#f0f7ff"></div>
+
+        <div class="buyer-label">Hinterlassenenrente (p.a.)</div>
+        <div><input type="text" id="b1_pension_death" class="money" value="40'000" style="background:#f0f7ff"></div>
+        <div><input type="text" id="b2_pension_death" class="money" value="15'000" style="background:#f0f7ff"></div>
+      </div>
+
+      <fieldset style="margin-top:20px; border-color:#003366;">
+        <legend>Geplanter Einsatz Eigenmittel (Gemeinsam)</legend>
+        <div class="grid-3">
+          <label>Einsatz Konto/Depot (Total)
+            <input id="invest_total_hard" class="money" type="text" value="100'000" style="font-weight:bold; color:#003366;">
+          </label>
+          <label>Einsatz 3a (Total)
+            <input id="invest_total_3a" class="money" type="text" value="30'000" style="font-weight:bold; color:#003366;">
+          </label>
+          <label>Einsatz PK (Total)
+            <input id="invest_total_pk" class="money" type="text" value="100'000" style="font-weight:bold; color:#003366;">
+          </label>
+        </div>
+        <div class="sum-display">Total Investiert: <span id="sum_investedCapital">CHF 0</span></div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Objekt & Kaufnebenkosten</legend>
+        <div class="grid-3">
+          <label>Nutzungsart
+            <select id="obj_type">
+              <option value="home">Eigenheim (selbstbewohnt)</option>
+              <option value="invest">Renditeobjekt</option>
+              <option value="holiday">Ferienobjekt</option>
+            </select>
+          </label>
+          <label>Kaufpreis Objekt
+            <input id="propertyPrice" class="money" type="text" value="900'000">
+          </label>
+          <label>Renovation (Investition)
+            <input id="renovationCost" class="money" type="text" value="20'000">
+          </label>
+        </div>
+        
+        <hr style="border:0; border-top:1px solid #eee; margin:15px 0">
+        <div style="font-size:13px; font-weight:700; color:#666; margin-bottom:10px;">Detaillierte Kaufnebenkosten</div>
+        
+        <div class="grid-3">
+          <label>Handänderungssteuer <input id="tax_transfer" class="money" type="text" value="5'000"></label>
+          <label>Notariat <input id="fee_notary" class="money" type="text" value="2'500"></label>
+          <label>Grundbuch <input id="fee_registry" class="money" type="text" value="800"></label>
+          <label>Schuldbrief <input id="fee_mortgage" class="money" type="text" value="600"></label>
+          <label>Gebühr 3a-Bezug <input id="fee_3a_prefund" class="money" type="text" value="1'200"></label>
+          <label>Gebühr PK-Bezug <input id="fee_pk_wef" class="money" type="text" value="2'000"></label>
+        </div>
+        <div class="sum-display">Total Nebenkosten: <span id="sum_buyingFees">CHF 0</span></div>
+      </fieldset>
+
+      <div id="validationBanner" class="banner error" style="display:none"></div>
+
+      <div class="actions no-print">
+        <button type="button" id="btnCalcPhase1" class="btn btn-primary">Analyse starten</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- PHASE 1 ERGEBNISSE: MACHBARKEIT -->
+  <div id="sectionResultsP1" class="collapsible collapsed">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px">
+      <h2>Ergebnis Phase 1: Machbarkeit</h2>
+      <button id="btnEditP1" class="btn btn-ghost no-print">Daten bearbeiten</button>
+    </div>
+    
+    <div class="chart-box">
+      <div class="chart-title">Finanzierungsmix (Anteile in %)</div>
+      <div id="chartP1"></div>
+    </div>
+    
+    <div class="tiles">
+      <div class="kpi">
+        <div class="kpi-label">Gesamt-Investition</div>
+        <div id="t1_totalInvest" class="kpi-value">CHF 0</div>
+        <div class="kpi-sub">Kaufpreis + Renovation</div>
+      </div>
+      <div class="kpi" id="kpi1_mortgage">
+        <div class="kpi-label">Benötigte Hypothek</div>
+        <div id="t1_mortgage" class="kpi-value">CHF 0</div>
+        <div class="kpi-sub" id="t1_ltv">Belehnung: 0%</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Investiertes Kapital</div>
+        <div id="t1_equity" class="kpi-value">CHF 0</div>
+        <div class="kpi-sub">Konto + 3a + PK</div>
+      </div>
+      <div class="kpi warn">
+        <div class="kpi-label">Kaufnebenkosten</div>
+        <div id="t1_fees" class="kpi-value">CHF 0</div>
+        <div class="kpi-sub">Müssen separat bezahlt werden</div>
+      </div>
+      <div class="kpi" id="kpi1_liquidity">
+        <div class="kpi-label">Benötigte Liquidität</div>
+        <div id="t1_cash" class="kpi-value">CHF 0</div>
+        <div class="kpi-sub">Einsatz + Gebühren</div>
+      </div>
+      <div class="kpi" id="kpi1_delta">
+        <div class="kpi-label">Delta zu 80%</div>
+        <div id="t1_delta" class="kpi-value">CHF 0</div>
+        <div class="kpi-sub">Fehlendes EK für max. Belehnung</div>
+      </div>
+      <div class="kpi" id="recP1" style="grid-column: span 3;">
+        <div class="rec-box">
+          <div id="recP1_status" class="rec-status">Status</div>
+          <div id="recP1_text" class="rec-text">...</div>
+          <div style="margin-top:10px;">
+            <button id="btnToPhase2" class="rec-btn no-print">Weiter zu Phase 2</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PHASE 2 ERGEBNISSE: TRAGBARKEIT -->
+  <div id="sectionResultsP2" class="collapsible collapsed" style="margin-top:30px; border-top:1px dashed #ccc; padding-top:20px">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px">
+      <h2>Ergebnis Phase 2: Tragbarkeit</h2>
+    </div>
+    
+    <div class="chart-grid">
+      <div class="chart-box">
+        <div class="chart-title">Kalkulatorische Belastung vs. Limit</div>
+        <div id="chartP2_Bar"></div>
+      </div>
+      <div class="chart-box">
+        <div class="chart-title">Kostenaufteilung (kalkulatorisch)</div>
+        <div id="chartP2_Donut"></div>
+      </div>
+    </div>
+    
+    <div class="tiles">
+      <div class="kpi" id="kpi2_burden">
+        <div class="kpi-label">Tragbarkeit</div>
+        <div id="t2_burden" class="kpi-value">0%</div>
+        <div class="kpi-sub">Limit: 33.3%</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Notwendiges Einkommen</div>
+        <div id="t2_minIncome" class="kpi-value">CHF 0</div>
+        <div class="kpi-sub">Damit Tragbarkeit ≤ 33%</div>
+      </div>
+      <div class="kpi" style="background:#f8fafd; border-color:#b0c4de">
+        <div class="kpi-label">Aufteilung Hypothek</div>
+        <div style="margin-top:6px; font-size:15px">
+          <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+            <span>1. Hypo (bis 65%):</span>
+            <strong id="t2_hypo1">0</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between; color:var(--hypo2);">
+            <span>2. Hypo:</span>
+            <strong id="t2_hypo2">0</strong>
+          </div>
+        </div>
+        <div class="kpi-sub" style="margin-top:8px">2. Hypo muss amortisiert werden</div>
+      </div>
+      <div class="kpi" id="recP2" style="grid-column: span 3;">
+        <div class="rec-box">
+          <div id="recP2_status" class="rec-status">Status</div>
+          <div id="recP2_text" class="rec-text">...</div>
+          <div style="margin-top:10px;">
+            <button id="btnToPhase3" class="rec-btn no-print">Weiter zum Risiko-Check</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PHASE 3: RISIKO-ANALYSE -->
+  <div id="sectionResultsRisk" class="collapsible collapsed" style="margin-top:30px; border-top:2px solid var(--warning); padding-top:20px">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px">
+      <h2>Ergebnis Phase 3: Risiko-Analyse</h2>
+      <button id="btnBackToP2" class="btn btn-ghost no-print">Zurück</button>
+    </div>
+    <p style="margin-bottom:20px; color:#666">Basis: Kalkulatorischer Zins (5%) — Was passiert wenn...</p>
+    
+    <div class="risk-header-row">Szenarien: Hauptverdiener (Käufer 1) & Immobilie</div>
+    <div class="risk-grid">
+      <div class="risk-card" id="risk_alv">
+        <div class="risk-title">Arbeitslosigkeit (K1)</div>
+        <div class="risk-body">
+          <p>Taggeld K1 + Lohn K2:</p>
+          <div class="risk-value" id="val_alv">CHF 0</div>
+          <div class="risk-target" id="target_alv"></div>
+          <p class="risk-sub">Deckungslücke pro Jahr:</p>
+          <div class="risk-gap" id="gap_alv">CHF 0</div>
+        </div>
+        <div class="risk-status" id="stat_alv">OK</div>
+      </div>
+      
+      <div class="risk-card" id="risk_iv">
+        <div class="risk-title">Invalidität (K1)</div>
+        <div class="risk-body">
+          <p>IV-Rente K1 + Lohn K2:</p>
+          <div class="risk-value" id="val_iv">CHF 0</div>
+          <div class="risk-target" id="target_iv"></div>
+          <p class="risk-sub">Deckungslücke pro Jahr:</p>
+          <div class="risk-gap" id="gap_iv">CHF 0</div>
+        </div>
+        <div class="risk-status" id="stat_iv">OK</div>
+      </div>
+      
+      <div class="risk-card" id="risk_death">
+        <div class="risk-title">Todesfall (K1)</div>
+        <div class="risk-body">
+          <p>Hinterlassenenrente + Lohn K2:</p>
+          <div class="risk-value" id="val_death">CHF 0</div>
+          <div class="risk-target" id="target_death"></div>
+          <p class="risk-sub">Nötiges Todesfallkapital:</p>
+          <div class="risk-gap" id="gap_death">CHF 0</div>
+        </div>
+        <div class="risk-status" id="stat_death">OK</div>
+      </div>
+      
+      <div class="risk-card" id="risk_value">
+        <div class="risk-title">Immobilien-Crash (-20%)</div>
+        <div class="risk-body">
+          <p>Neuer Belehnungs-Max:</p>
+          <div class="risk-value" id="val_crash">CHF 0</div>
+          <p class="risk-sub">Margin Call (Nachschuss):</p>
+          <div class="risk-gap" id="gap_crash">CHF 0</div>
+        </div>
+        <div class="risk-status" id="stat_crash">OK</div>
+      </div>
+    </div>
+
+    <div id="risk_row_b2" style="display:none">
+      <div class="risk-header-row" style="margin-top:20px;">Szenarien: Partner/in (Käufer 2) & Markt</div>
+      <div class="risk-grid">
+        <div class="risk-card" id="risk_alv_b2">
+          <div class="risk-title">Arbeitslosigkeit (K2)</div>
+          <div class="risk-body">
+            <p>Taggeld K2 + Lohn K1:</p>
+            <div class="risk-value" id="val_alv_b2">CHF 0</div>
+            <div class="risk-target" id="target_alv_b2"></div>
+            <p class="risk-sub">Deckungslücke pro Jahr:</p>
+            <div class="risk-gap" id="gap_alv_b2">CHF 0</div>
+          </div>
+          <div class="risk-status" id="stat_alv_b2">OK</div>
+        </div>
+        
+        <div class="risk-card" id="risk_iv_b2">
+          <div class="risk-title">Invalidität (K2)</div>
+          <div class="risk-body">
+            <p>IV-Rente K2 + Lohn K1:</p>
+            <div class="risk-value" id="val_iv_b2">CHF 0</div>
+            <div class="risk-target" id="target_iv_b2"></div>
+            <p class="risk-sub">Deckungslücke pro Jahr:</p>
+            <div class="risk-gap" id="gap_iv_b2">CHF 0</div>
+          </div>
+          <div class="risk-status" id="stat_iv_b2">OK</div>
+        </div>
+        
+        <div class="risk-card" id="risk_death_b2">
+          <div class="risk-title">Todesfall (K2)</div>
+          <div class="risk-body">
+            <p>Hinterlassenenrente + Lohn K1:</p>
+            <div class="risk-value" id="val_death_b2">CHF 0</div>
+            <div class="risk-target" id="target_death_b2"></div>
+            <p class="risk-sub">Nötiges Todesfallkapital:</p>
+            <div class="risk-gap" id="gap_death_b2">CHF 0</div>
+          </div>
+          <div class="risk-status" id="stat_death_b2">OK</div>
+        </div>
+        
+        <div class="risk-card" id="risk_rate">
+          <div class="risk-title">Zins-Anstieg (auf 3.0%)</div>
+          <div class="risk-body">
+            <p>Mögliche neue Zinslast:</p>
+            <div class="risk-value" id="val_rate_shock">CHF 0</div>
+            <p class="risk-sub">Mehrkosten pro Monat:</p>
+            <div class="risk-gap" id="gap_rate_shock">CHF 0</div>
+          </div>
+          <div class="risk-status" style="background:#888">INFO</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="risk-header-row" style="margin-top:30px;">Szenarien: Pensionierung (Tragbarkeit der 1. Hypothek)</div>
+    <div class="risk-grid-3">
+      <div class="risk-card" id="pen_1">
+        <div class="risk-title">Käufer 1 pensioniert</div>
+        <div class="risk-body">
+          <p>Rente K1 + Lohn K2:</p>
+          <div class="risk-value" id="val_pen_1">CHF 0</div>
+          <div class="risk-target" id="target_pen_1"></div>
+          <p class="risk-sub">Kapitalbedarf zur Reduktion:</p>
+          <div class="risk-gap" id="gap_pen_1">CHF 0</div>
+        </div>
+        <div class="risk-status" id="stat_pen_1">OK</div>
+      </div>
+      
+      <div class="risk-card" id="pen_2">
+        <div class="risk-title">Käufer 2 pensioniert</div>
+        <div class="risk-body">
+          <p>Rente K2 + Lohn K1:</p>
+          <div class="risk-value" id="val_pen_2">CHF 0</div>
+          <div class="risk-target" id="target_pen_2"></div>
+          <p class="risk-sub">Kapitalbedarf zur Reduktion:</p>
+          <div class="risk-gap" id="gap_pen_2">CHF 0</div>
+        </div>
+        <div class="risk-status" id="stat_pen_2">OK</div>
+      </div>
+      
+      <div class="risk-card" id="pen_both">
+        <div class="risk-title">Beide pensioniert</div>
+        <div class="risk-body">
+          <p>Rente K1 + Rente K2:</p>
+          <div class="risk-value" id="val_pen_both">CHF 0</div>
+          <div class="risk-target" id="target_pen_both"></div>
+          <p class="risk-sub">Kapitalbedarf zur Reduktion:</p>
+          <div class="risk-gap" id="gap_pen_both">CHF 0</div>
+        </div>
+        <div class="risk-status" id="stat_pen_both">OK</div>
+      </div>
+    </div>
+
+    <div class="actions no-print" style="justify-content: flex-start; margin-top:20px;">
+      <button id="btnToPhase4" class="btn btn-primary">Weiter zur Produktwahl</button>
+    </div>
+  </div>
+  
+  <!-- PHASE 4: PRODUKTWAHL -->
+  <div id="sectionResultsP4" class="collapsible collapsed" style="margin-top:40px; border-top:2px solid var(--brand); padding-top:20px">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px">
+      <h2>Phase 4: Produkt & Reales Budget</h2>
+      <button id="btnBackToRisk" class="btn btn-ghost no-print">Zurück</button>
+    </div>
+    
+    <div class="p3-grid">
+      <div class="tranche-box">
+        <h3 style="margin-top:0; color:var(--brand); font-size:1rem;">Hypothekar-Mix zusammenstellen</h3>
+        <p style="font-size:0.85rem; color:#666; margin-bottom:15px;">
+          Hypothek: <strong id="p3_targetHypo">CHF 0</strong><br>
+          <span id="p3_deltaDisplay" style="font-size:0.8rem"></span>
+        </p>
+        <div id="trancheContainer"></div>
+        <button id="btnAddTranche" class="btn-small-ghost no-print" style="margin-top:10px;">+ Tranche hinzufügen</button>
+      </div>
+      <div class="chart-box" style="min-height:0; height:100%;">
+        <div class="chart-title">Zusammensetzung Kosten (Real)</div>
+        <div id="chartP3_Donut"></div>
+      </div>
+    </div>
+    
+    <div class="tiles-p3">
+      <div class="kpi ok" id="kpi3_total">
+        <div class="kpi-label">Reale Monatsbelastung</div>
+        <div id="t3_monthlyTotalReal" class="kpi-value">CHF 0</div>
+        <div class="kpi-sub" id="t3_mixRate">Mischzins: 0.00%</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Hypothekarzins</div>
+        <div id="t3_interest" class="kpi-value">CHF 0</div>
+        <div class="kpi-sub">Monatlich (real)</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Amortisation</div>
+        <div id="t3_amort" class="kpi-value">CHF 0</div>
+        <div class="kpi-sub">Monatlich</div>
+      </div>
+      <div class="kpi" style="border-left: 5px solid #2980b9; background: #f0f7ff;">
+        <div class="kpi-label">Unterhalt</div>
+        <div id="t3_opCost" class="kpi-value">CHF 0</div>
+        <div class="kpi-sub">0.4% vom Objektwert</div>
+      </div>
+      <div class="kpi" style="border-left: 5px solid #f39c12; background: #fff8eb;">
+        <div class="kpi-label">Rückstellungen</div>
+        <div id="t3_renoReserve" class="kpi-value">CHF 0</div>
+        <div class="kpi-sub">0.6% vom Objektwert</div>
+      </div>
+    </div>
+
+    <div class="actions no-print" style="justify-content: flex-start; margin-top:20px;">
+      <button id="btnToPhase5" class="btn btn-primary">Weiter zur Zusammenfassung</button>
+    </div>
+  </div>
+
+  <!-- PHASE 5: ZUSAMMENFASSUNG -->
+  <div id="sectionResultsP5" class="collapsible collapsed" style="margin-top:40px; border-top:4px solid var(--brand); padding-top:20px">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
+      <h2>Zusammenfassung: Monatliche Wohnkosten</h2>
+      <button id="btnBackToP4" class="btn btn-ghost no-print">Zurück</button>
+    </div>
+
+    <div id="cost_summary_grid" class="tiles-p3" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+      <!-- Wird dynamisch gefüllt -->
+    </div>
+  </div>
+
+</main>
+
+<script src="./js/hypothek.js"></script>
+</body>
+</html>
