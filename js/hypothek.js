@@ -12,8 +12,11 @@
     PENSION_AGE: 65,         // Pensionierungsalter
     MIN_AMORT_YEARS: 1,      // Minimale Amortisationsdauer
     DEFAULT_AMORT_YEARS: 15, // Standard-Amortisationsdauer
-    DEATH_CAPITAL_RATE: 0.065, // Kapitalisierungszins für Todesfallkapital
-    RESERVE_RATE: 0.10       // Empfohlene Liquiditätsreserve (10%)
+    DEATH_CAPITAL_TAX_MARKUP: 0.25, // 25% Steuerzuschlag auf Todesfallkapital
+    RESERVE_RATE: 0.10,      // Empfohlene Liquiditätsreserve (10%)
+    // Schwellenwerte für Empfehlungs-Farbkodierung
+    INCOME_GAP_WARN_THRESHOLD: 0.10, // Gelb wenn Lücke < 10% des Einkommens
+    DEATH_CAPITAL_WARN_THRESHOLD: 0.20 // Gelb wenn Kapital < 20% des Immobilienpreises
   };
   
   const RATE_MAINT = CONFIG.RATE_OP + CONFIG.RATE_RENO;
@@ -69,6 +72,26 @@
     const el = q(selector);
     if (el) el.className = className;
   };
+
+  // --- HELPER: Berechne tragbare Hypothek basierend auf Einkommen ---
+  function calcAffordableMortgage(income) {
+    // Max. Belastung bei gegebenem Einkommen
+    const maxYearlyBurden = income * (CONFIG.MAX_BURDEN / 100);
+    // Abzug Unterhaltskosten (basierend auf aktueller Immobilie)
+    const yearlyMaint = data.totalInvest * RATE_MAINT;
+    // Verfügbar für Zins
+    const availableForInterest = maxYearlyBurden - yearlyMaint;
+    // Tragbare Hypothek bei 5% kalkulatorischem Zins
+    return Math.max(0, availableForInterest / CONFIG.RATE_STRESS);
+  }
+
+  // --- HELPER: Berechne benötigtes Todesfallkapital ---
+  function calcDeathCapitalNeeded(survivorIncome) {
+    const affordableMortgage = calcAffordableMortgage(survivorIncome);
+    const gap = Math.max(0, data.mortgage - affordableMortgage);
+    // 25% Steuerzuschlag
+    return gap * (1 + CONFIG.DEATH_CAPITAL_TAX_MARKUP);
+  }
 
   // --- HAUPTBERECHNUNGEN ---
   function calcAll() {
@@ -332,13 +355,15 @@
       setText('#stat_iv', 'OK');
     }
 
-    // Todesfall K1
+    // Todesfall K1 - NEUE BERECHNUNG
     const deathInc1 = getVal('#b1_pension_death') + data.inc2;
     setText('#val_death', fmtCHF(deathInc1));
     setText('#target_death', targetTxt);
     
-    if (deathInc1 < data.minIncome) {
-      riskGaps.b1.death = (data.minIncome - deathInc1) / CONFIG.DEATH_CAPITAL_RATE;
+    // Berechne benötigtes Todesfallkapital basierend auf tragbarer Hypothek
+    riskGaps.b1.death = calcDeathCapitalNeeded(deathInc1);
+    
+    if (riskGaps.b1.death > 0) {
       setText('#gap_death', fmtCHF(riskGaps.b1.death));
       setClass('#risk_death', 'risk-card alert');
       setText('#stat_death', 'LÜCKE');
@@ -410,13 +435,15 @@
         setText('#stat_iv_b2', 'OK');
       }
 
-      // Todesfall K2
+      // Todesfall K2 - NEUE BERECHNUNG
       const deathInc2 = getVal('#b2_pension_death') + data.inc1;
       setText('#val_death_b2', fmtCHF(deathInc2));
       setText('#target_death_b2', targetTxt);
       
-      if (deathInc2 < data.minIncome) {
-        riskGaps.b2.death = (data.minIncome - deathInc2) / CONFIG.DEATH_CAPITAL_RATE;
+      // Berechne benötigtes Todesfallkapital basierend auf tragbarer Hypothek
+      riskGaps.b2.death = calcDeathCapitalNeeded(deathInc2);
+      
+      if (riskGaps.b2.death > 0) {
         setText('#gap_death_b2', fmtCHF(riskGaps.b2.death));
         setClass('#risk_death_b2', 'risk-card alert');
         setText('#stat_death_b2', 'LÜCKE');
@@ -480,6 +507,23 @@
     checkPension(pen1 + pen2, '#val_pen_both', '#gap_pen_both', '#stat_pen_both', '#target_pen_both', 'both');
   }
 
+  // --- HELPER: Bestimme Empfehlungsfarbe basierend auf Schwellenwerten ---
+  function getRecommendationClass(gapType, gapValue) {
+    if (gapValue <= 0) return 'ok';
+    
+    if (gapType === 'income') {
+      // Für Einkommenslücken (ALV, IV): Gelb wenn < 10% des Einkommens
+      const threshold = data.effectiveIncome * CONFIG.INCOME_GAP_WARN_THRESHOLD;
+      return gapValue < threshold ? 'warn' : 'alert';
+    } else if (gapType === 'death') {
+      // Für Todesfallkapital: Gelb wenn < 20% des Immobilienpreises
+      const threshold = data.totalInvest * CONFIG.DEATH_CAPITAL_WARN_THRESHOLD;
+      return gapValue < threshold ? 'warn' : 'alert';
+    }
+    
+    return 'alert'; // Default
+  }
+
   // --- EMPFEHLUNGEN RENDERN ---
   
   function renderRecommendations() {
@@ -500,14 +544,16 @@
       // Arbeitslosenversicherung (Erwerbsausfall)
       if (riskGaps.b1.alv > 0) {
         hasB1Recs = true;
+        const colorClass = getRecommendationClass('income', riskGaps.b1.alv);
+        const severity = colorClass === 'warn' ? 'Moderate Lücke' : 'Kritische Lücke';
         recB1Grid.innerHTML += `
-          <div class="rec-card">
+          <div class="rec-card ${colorClass}">
             <div class="rec-card-title">Arbeitslosenversicherung</div>
             <div class="rec-card-body">
               Bei Arbeitslosigkeit fehlen jährlich Mittel zur Deckung der Hypothekarkosten.
             </div>
             <div class="rec-card-value">Deckungslücke: ${fmtCHF(riskGaps.b1.alv)} / Jahr</div>
-            <div class="rec-card-hint">Empfehlung: Prüfen Sie eine private Arbeitslosenversicherung oder bauen Sie Reserven auf.</div>
+            <div class="rec-card-hint">${severity}: ${colorClass === 'warn' ? 'Könnte durch Reserven überbrückt werden.' : 'Prüfen Sie eine private Arbeitslosenversicherung oder bauen Sie Reserven auf.'}</div>
           </div>
         `;
       }
@@ -515,14 +561,16 @@
       // Erwerbsunfähigkeitsversicherung
       if (riskGaps.b1.iv > 0) {
         hasB1Recs = true;
+        const colorClass = getRecommendationClass('income', riskGaps.b1.iv);
+        const severity = colorClass === 'warn' ? 'Moderate Lücke' : 'Kritische Lücke';
         recB1Grid.innerHTML += `
-          <div class="rec-card warn">
+          <div class="rec-card ${colorClass}">
             <div class="rec-card-title">Erwerbsunfähigkeitsversicherung</div>
             <div class="rec-card-body">
               Die IV- und PK-Leistungen decken bei Invalidität die Hypothekarkosten nicht vollständig.
             </div>
             <div class="rec-card-value">Deckungslücke: ${fmtCHF(riskGaps.b1.iv)} / Jahr</div>
-            <div class="rec-card-hint">Empfehlung: Erwerbsunfähigkeitsrente (Langzeit) mit entsprechender Deckungshöhe abschliessen.</div>
+            <div class="rec-card-hint">${severity}: ${colorClass === 'warn' ? 'Prüfen Sie optionale Absicherung.' : 'Erwerbsunfähigkeitsrente (Langzeit) mit entsprechender Deckungshöhe empfohlen.'}</div>
           </div>
         `;
       }
@@ -530,14 +578,16 @@
       // Todesfallversicherung
       if (riskGaps.b1.death > 0) {
         hasB1Recs = true;
+        const colorClass = getRecommendationClass('death', riskGaps.b1.death);
+        const severity = colorClass === 'warn' ? 'Überschaubare Summe' : 'Signifikante Absicherung nötig';
         recB1Grid.innerHTML += `
-          <div class="rec-card">
+          <div class="rec-card ${colorClass}">
             <div class="rec-card-title">Todesfallrisikoversicherung</div>
             <div class="rec-card-body">
-              Im Todesfall reichen die Hinterlassenenleistungen nicht aus, um die Tragbarkeit zu gewährleisten.
+              Im Todesfall muss die Hypothek reduziert werden, damit sie für den Partner tragbar bleibt.
             </div>
             <div class="rec-card-value">Benötigtes Kapital: ${fmtCHF(riskGaps.b1.death)}</div>
-            <div class="rec-card-hint">Empfehlung: Todesfallrisikoversicherung mit Versicherungssumme gemäss Analyse.</div>
+            <div class="rec-card-hint">${severity}${colorClass === 'warn' ? ' – prüfen Sie optionale Absicherung.' : ' – Todesfallrisikoversicherung empfohlen.'} (inkl. 25% Steuerzuschlag)</div>
           </div>
         `;
       }
@@ -556,42 +606,48 @@
       
       if (riskGaps.b2.alv > 0) {
         hasB2Recs = true;
+        const colorClass = getRecommendationClass('income', riskGaps.b2.alv);
+        const severity = colorClass === 'warn' ? 'Moderate Lücke' : 'Kritische Lücke';
         recB2Grid.innerHTML += `
-          <div class="rec-card">
+          <div class="rec-card ${colorClass}">
             <div class="rec-card-title">Arbeitslosenversicherung</div>
             <div class="rec-card-body">
               Bei Arbeitslosigkeit fehlen jährlich Mittel zur Deckung der Hypothekarkosten.
             </div>
             <div class="rec-card-value">Deckungslücke: ${fmtCHF(riskGaps.b2.alv)} / Jahr</div>
-            <div class="rec-card-hint">Empfehlung: Prüfen Sie eine private Arbeitslosenversicherung oder bauen Sie Reserven auf.</div>
+            <div class="rec-card-hint">${severity}: ${colorClass === 'warn' ? 'Könnte durch Reserven überbrückt werden.' : 'Prüfen Sie eine private Arbeitslosenversicherung oder bauen Sie Reserven auf.'}</div>
           </div>
         `;
       }
       
       if (riskGaps.b2.iv > 0) {
         hasB2Recs = true;
+        const colorClass = getRecommendationClass('income', riskGaps.b2.iv);
+        const severity = colorClass === 'warn' ? 'Moderate Lücke' : 'Kritische Lücke';
         recB2Grid.innerHTML += `
-          <div class="rec-card warn">
+          <div class="rec-card ${colorClass}">
             <div class="rec-card-title">Erwerbsunfähigkeitsversicherung</div>
             <div class="rec-card-body">
               Die IV- und PK-Leistungen decken bei Invalidität die Hypothekarkosten nicht vollständig.
             </div>
             <div class="rec-card-value">Deckungslücke: ${fmtCHF(riskGaps.b2.iv)} / Jahr</div>
-            <div class="rec-card-hint">Empfehlung: Erwerbsunfähigkeitsrente (Langzeit) mit entsprechender Deckungshöhe abschliessen.</div>
+            <div class="rec-card-hint">${severity}: ${colorClass === 'warn' ? 'Prüfen Sie optionale Absicherung.' : 'Erwerbsunfähigkeitsrente (Langzeit) mit entsprechender Deckungshöhe empfohlen.'}</div>
           </div>
         `;
       }
       
       if (riskGaps.b2.death > 0) {
         hasB2Recs = true;
+        const colorClass = getRecommendationClass('death', riskGaps.b2.death);
+        const severity = colorClass === 'warn' ? 'Überschaubare Summe' : 'Signifikante Absicherung nötig';
         recB2Grid.innerHTML += `
-          <div class="rec-card">
+          <div class="rec-card ${colorClass}">
             <div class="rec-card-title">Todesfallrisikoversicherung</div>
             <div class="rec-card-body">
-              Im Todesfall reichen die Hinterlassenenleistungen nicht aus, um die Tragbarkeit zu gewährleisten.
+              Im Todesfall muss die Hypothek reduziert werden, damit sie für den Partner tragbar bleibt.
             </div>
             <div class="rec-card-value">Benötigtes Kapital: ${fmtCHF(riskGaps.b2.death)}</div>
-            <div class="rec-card-hint">Empfehlung: Todesfallrisikoversicherung mit Versicherungssumme gemäss Analyse.</div>
+            <div class="rec-card-hint">${severity}${colorClass === 'warn' ? ' – prüfen Sie optionale Absicherung.' : ' – Todesfallrisikoversicherung empfohlen.'} (inkl. 25% Steuerzuschlag)</div>
           </div>
         `;
       }
@@ -999,7 +1055,83 @@
       kpi3.className = realBurden <= CONFIG.MAX_BURDEN ? 'kpi ok' : 'kpi warn';
     }
     
+    // Amortisations-Sektion anzeigen wenn 2. Hypothek vorhanden
+    const amortSection = q('#amortTypeSection');
+    if (amortSection) {
+      amortSection.style.display = data.hypo2 > 0 ? 'block' : 'none';
+      setText('#p4_amortMonthly', fmtCHF(data.monthlyAmort));
+    }
+    
+    // Amortisations-Typ aktualisieren
+    updateAmortizationDisplay();
+    
     renderChartP3Donut(monthlyInterest, data.p5_op, data.p5_reno);
+  }
+  
+  function updateAmortizationDisplay() {
+    const amortType = document.querySelector('input[name="amortType"]:checked')?.value || 'indirect';
+    const mixFields = q('#amortMixFields');
+    const directInput = q('#amortDirectAmount');
+    const indirectInput = q('#amort3aAmount');
+    const mixTotal = q('#amortMixTotal');
+    
+    if (mixFields) {
+      mixFields.style.display = amortType === 'mix' ? 'block' : 'none';
+    }
+    
+    // Bei Mix: Beträge validieren
+    if (amortType === 'mix' && directInput && indirectInput && mixTotal) {
+      const direct = parseCHF(directInput.value);
+      const indirect = parseCHF(indirectInput.value);
+      const total = direct + indirect;
+      const target = data.monthlyAmort;
+      
+      if (Math.abs(total - target) < 1) {
+        mixTotal.textContent = `✓ Total: ${fmtCHF(total)} (korrekt)`;
+        mixTotal.style.color = 'var(--ok)';
+      } else {
+        const diff = target - total;
+        mixTotal.textContent = `Total: ${fmtCHF(total)} | Differenz: ${fmtCHF(diff)}`;
+        mixTotal.style.color = diff > 0 ? 'var(--danger)' : 'var(--warning)';
+      }
+    }
+    
+    // Speichere Amortisations-Konfiguration in data
+    data.amortType = amortType;
+    if (amortType === 'direct') {
+      data.amortDirect = data.monthlyAmort;
+      data.amort3a = 0;
+    } else if (amortType === 'indirect') {
+      data.amortDirect = 0;
+      data.amort3a = data.monthlyAmort;
+    } else {
+      data.amortDirect = parseCHF(directInput?.value || 0);
+      data.amort3a = parseCHF(indirectInput?.value || 0);
+    }
+  }
+  
+  function setupAmortizationListeners() {
+    const radios = qAll('input[name="amortType"]');
+    radios.forEach(radio => {
+      radio.addEventListener('change', updateAmortizationDisplay);
+    });
+    
+    const directInput = q('#amortDirectAmount');
+    const indirectInput = q('#amort3aAmount');
+    
+    if (directInput) {
+      directInput.addEventListener('change', (e) => {
+        e.target.value = fmtNumber(parseCHF(e.target.value));
+        updateAmortizationDisplay();
+      });
+    }
+    
+    if (indirectInput) {
+      indirectInput.addEventListener('change', (e) => {
+        e.target.value = fmtNumber(parseCHF(e.target.value));
+        updateAmortizationDisplay();
+      });
+    }
   }
 
   function renderP5() {
@@ -1054,6 +1186,311 @@
     renderRecommendations();
   }
 
+  // --- PHASE 6: LÖSUNGEN & VOLLMACHT ---
+  
+  function renderP6() {
+    const b1Name = q('#b1_name')?.value?.trim() || 'Käufer 1';
+    const b2Name = q('#b2_name')?.value?.trim() || '';
+    const hasB2 = data.inc2 > 0 || b2Name !== '';
+    
+    // --- HYPOTHEK ---
+    const hypoGrid = q('#proposal_hypothek');
+    if (hypoGrid) {
+      hypoGrid.innerHTML = '';
+      
+      if (data.tranches && data.tranches.length > 0) {
+        data.tranches.forEach((tranche, idx) => {
+          hypoGrid.innerHTML += `
+            <div class="proposal-row neutral">
+              <div class="proposal-product">
+                ${tranche.product}
+                <small>Tranche ${idx + 1}</small>
+              </div>
+              <div class="proposal-amount">${fmtCHF(tranche.amount)}</div>
+              <div class="proposal-rate">~${tranche.rate.toFixed(2)}%*</div>
+              <div class="proposal-choice">
+                <label><input type="radio" name="hypo_${idx}" value="ja" checked> Ja</label>
+                <label><input type="radio" name="hypo_${idx}" value="nein"> Nein</label>
+              </div>
+            </div>
+          `;
+        });
+      }
+    }
+    
+    // --- VERSICHERUNGEN ---
+    const insGrid = q('#proposal_insurance');
+    if (insGrid) {
+      insGrid.innerHTML = '';
+      
+      // Käufer 1 Versicherungen
+      if (riskGaps.b1.death > 0) {
+        const isCritical = riskGaps.b1.death >= data.totalInvest * CONFIG.DEATH_CAPITAL_WARN_THRESHOLD;
+        const colorClass = isCritical ? 'critical' : 'moderate';
+        insGrid.innerHTML += `
+          <div class="proposal-row ${colorClass}">
+            <div class="proposal-product">
+              Todesfallrisikoversicherung
+              <small>${b1Name}</small>
+            </div>
+            <div class="proposal-amount">${fmtCHF(riskGaps.b1.death)}</div>
+            <div class="proposal-rate">Versicherungssumme</div>
+            <div class="proposal-choice">
+              <label><input type="radio" name="ins_death_b1" value="ja" ${isCritical ? 'checked' : ''}> Ja</label>
+              <label><input type="radio" name="ins_death_b1" value="nein" ${!isCritical ? 'checked' : ''}> Nein</label>
+            </div>
+          </div>
+        `;
+      }
+      
+      if (riskGaps.b1.iv > 0) {
+        const isCritical = riskGaps.b1.iv >= data.effectiveIncome * CONFIG.INCOME_GAP_WARN_THRESHOLD;
+        const colorClass = isCritical ? 'critical' : 'moderate';
+        insGrid.innerHTML += `
+          <div class="proposal-row ${colorClass}">
+            <div class="proposal-product">
+              Erwerbsunfähigkeitsversicherung
+              <small>${b1Name}</small>
+            </div>
+            <div class="proposal-amount">${fmtCHF(riskGaps.b1.iv)}</div>
+            <div class="proposal-rate">pro Jahr</div>
+            <div class="proposal-choice">
+              <label><input type="radio" name="ins_iv_b1" value="ja" ${isCritical ? 'checked' : ''}> Ja</label>
+              <label><input type="radio" name="ins_iv_b1" value="nein" ${!isCritical ? 'checked' : ''}> Nein</label>
+            </div>
+          </div>
+        `;
+      }
+      
+      if (riskGaps.b1.alv > 0) {
+        const isCritical = riskGaps.b1.alv >= data.effectiveIncome * CONFIG.INCOME_GAP_WARN_THRESHOLD;
+        const colorClass = isCritical ? 'critical' : 'moderate';
+        insGrid.innerHTML += `
+          <div class="proposal-row ${colorClass}">
+            <div class="proposal-product">
+              Arbeitslosenzusatzversicherung
+              <small>${b1Name}</small>
+            </div>
+            <div class="proposal-amount">${fmtCHF(riskGaps.b1.alv)}</div>
+            <div class="proposal-rate">pro Jahr</div>
+            <div class="proposal-choice">
+              <label><input type="radio" name="ins_alv_b1" value="ja" ${isCritical ? 'checked' : ''}> Ja</label>
+              <label><input type="radio" name="ins_alv_b1" value="nein" ${!isCritical ? 'checked' : ''}> Nein</label>
+            </div>
+          </div>
+        `;
+      }
+      
+      // Käufer 2 Versicherungen
+      if (hasB2) {
+        if (riskGaps.b2.death > 0) {
+          const isCritical = riskGaps.b2.death >= data.totalInvest * CONFIG.DEATH_CAPITAL_WARN_THRESHOLD;
+          const colorClass = isCritical ? 'critical' : 'moderate';
+          insGrid.innerHTML += `
+            <div class="proposal-row ${colorClass}">
+              <div class="proposal-product">
+                Todesfallrisikoversicherung
+                <small>${b2Name || 'Käufer 2'}</small>
+              </div>
+              <div class="proposal-amount">${fmtCHF(riskGaps.b2.death)}</div>
+              <div class="proposal-rate">Versicherungssumme</div>
+              <div class="proposal-choice">
+                <label><input type="radio" name="ins_death_b2" value="ja" ${isCritical ? 'checked' : ''}> Ja</label>
+                <label><input type="radio" name="ins_death_b2" value="nein" ${!isCritical ? 'checked' : ''}> Nein</label>
+              </div>
+            </div>
+          `;
+        }
+        
+        if (riskGaps.b2.iv > 0) {
+          const isCritical = riskGaps.b2.iv >= data.effectiveIncome * CONFIG.INCOME_GAP_WARN_THRESHOLD;
+          const colorClass = isCritical ? 'critical' : 'moderate';
+          insGrid.innerHTML += `
+            <div class="proposal-row ${colorClass}">
+              <div class="proposal-product">
+                Erwerbsunfähigkeitsversicherung
+                <small>${b2Name || 'Käufer 2'}</small>
+              </div>
+              <div class="proposal-amount">${fmtCHF(riskGaps.b2.iv)}</div>
+              <div class="proposal-rate">pro Jahr</div>
+              <div class="proposal-choice">
+                <label><input type="radio" name="ins_iv_b2" value="ja" ${isCritical ? 'checked' : ''}> Ja</label>
+                <label><input type="radio" name="ins_iv_b2" value="nein" ${!isCritical ? 'checked' : ''}> Nein</label>
+              </div>
+            </div>
+          `;
+        }
+        
+        if (riskGaps.b2.alv > 0) {
+          const isCritical = riskGaps.b2.alv >= data.effectiveIncome * CONFIG.INCOME_GAP_WARN_THRESHOLD;
+          const colorClass = isCritical ? 'critical' : 'moderate';
+          insGrid.innerHTML += `
+            <div class="proposal-row ${colorClass}">
+              <div class="proposal-product">
+                Arbeitslosenzusatzversicherung
+                <small>${b2Name || 'Käufer 2'}</small>
+              </div>
+              <div class="proposal-amount">${fmtCHF(riskGaps.b2.alv)}</div>
+              <div class="proposal-rate">pro Jahr</div>
+              <div class="proposal-choice">
+                <label><input type="radio" name="ins_alv_b2" value="ja" ${isCritical ? 'checked' : ''}> Ja</label>
+                <label><input type="radio" name="ins_alv_b2" value="nein" ${!isCritical ? 'checked' : ''}> Nein</label>
+              </div>
+            </div>
+          `;
+        }
+      }
+      
+      // Falls keine Versicherungen nötig
+      if (insGrid.innerHTML === '') {
+        insGrid.innerHTML = `
+          <div class="proposal-row" style="background: var(--ok-bg); border-left-color: var(--ok);">
+            <div class="proposal-product" style="grid-column: span 4;">
+              ✓ Keine Versicherungslücken identifiziert - Ihre Vorsorge deckt die Risiken ab.
+            </div>
+          </div>
+        `;
+      }
+    }
+    
+    // --- SPAREN & VORSORGE ---
+    const saveGrid = q('#proposal_saving');
+    if (saveGrid) {
+      saveGrid.innerHTML = '';
+      
+      // Hole Amortisations-Konfiguration aus Phase 4
+      const amortType = data.amortType || 'indirect';
+      const amortDirect = data.amortDirect || 0;
+      const amort3a = data.amort3a || (amortType === 'indirect' ? data.monthlyAmort : 0);
+      
+      // Berechne Zinsen (real)
+      const monthlyInterestReal = data.tranches && data.tranches.length > 0 
+        ? data.tranches.reduce((sum, t) => sum + t.mInt, 0)
+        : (data.mortgage * currentMixRate) / 12;
+      
+      // Unterhaltskosten (0.4%)
+      const monthlyOp = (data.totalInvest * CONFIG.RATE_OP) / 12;
+      
+      // Liegenschaftskonto: Zins + Unterhalt + evtl. direkte Amortisation
+      const monthlyLiegenschaft = Math.round(monthlyInterestReal + monthlyOp + amortDirect);
+      
+      let liegenschaftDesc = 'Hypothekarzins + Unterhaltskosten (0.4%)';
+      if (amortDirect > 0) {
+        liegenschaftDesc += ` + direkte Amortisation (${fmtCHF(amortDirect)})`;
+      }
+      
+      saveGrid.innerHTML += `
+        <div class="proposal-row info">
+          <div class="proposal-product">
+            Liegenschaftskonto
+            <small>${liegenschaftDesc}</small>
+          </div>
+          <div class="proposal-amount">
+            <input type="text" class="proposal-input money" id="save_liegenschaft" value="${fmtNumber(monthlyLiegenschaft)}">
+          </div>
+          <div class="proposal-rate">pro Monat</div>
+          <div class="proposal-choice">
+            <label><input type="radio" name="save_liegenschaft" value="ja" checked> Ja</label>
+            <label><input type="radio" name="save_liegenschaft" value="nein"> Nein</label>
+          </div>
+        </div>
+      `;
+      
+      // Sparkonto Renovation (0.6%)
+      const monthlyReno = Math.round((data.totalInvest * CONFIG.RATE_RENO) / 12);
+      saveGrid.innerHTML += `
+        <div class="proposal-row info">
+          <div class="proposal-product">
+            Sparkonto Renovation
+            <small>Rückstellungen für Renovationen (0.6%)</small>
+          </div>
+          <div class="proposal-amount">
+            <input type="text" class="proposal-input money" id="save_renovation" value="${fmtNumber(monthlyReno)}">
+          </div>
+          <div class="proposal-rate">pro Monat</div>
+          <div class="proposal-choice">
+            <label><input type="radio" name="save_renovation" value="ja" checked> Ja</label>
+            <label><input type="radio" name="save_renovation" value="nein"> Nein</label>
+          </div>
+        </div>
+      `;
+      
+      // Amortisation via 3a (nur wenn indirekt oder Mix mit 3a-Anteil)
+      if (data.hypo2 > 0 && amort3a > 0) {
+        const amortTypeText = amortType === 'mix' ? 'Anteil indirekt' : 'Indirekte Amortisation';
+        saveGrid.innerHTML += `
+          <div class="proposal-row info">
+            <div class="proposal-product">
+              Amortisation via Säule 3a
+              <small>${amortTypeText} der 2. Hypothek (${fmtCHF(data.hypo2)})</small>
+            </div>
+            <div class="proposal-amount">
+              <input type="text" class="proposal-input money" id="save_3a" value="${fmtNumber(Math.round(amort3a))}">
+            </div>
+            <div class="proposal-rate">pro Monat</div>
+            <div class="proposal-choice">
+              <label><input type="radio" name="save_3a" value="ja" checked> Ja</label>
+              <label><input type="radio" name="save_3a" value="nein"> Nein</label>
+            </div>
+          </div>
+        `;
+      }
+      
+      // Wertschriften-Sparplan (Kapitalbedarf Pensionierung / Jahre / 12)
+      const maxPensionGap = Math.max(riskGaps.pension.b1, riskGaps.pension.b2, riskGaps.pension.both);
+      if (maxPensionGap > 0) {
+        const yearsToRetirement = Math.max(1, CONFIG.PENSION_AGE - data.age);
+        const monthlyPensionSave = Math.round(maxPensionGap / yearsToRetirement / 12);
+        saveGrid.innerHTML += `
+          <div class="proposal-row moderate">
+            <div class="proposal-product">
+              Wertschriften-Sparplan
+              <small>Kapitalaufbau für Pensionierung (${fmtCHF(maxPensionGap)} in ${yearsToRetirement} Jahren)</small>
+            </div>
+            <div class="proposal-amount">
+              <input type="text" class="proposal-input money" id="save_wertschriften" value="${fmtNumber(monthlyPensionSave)}">
+            </div>
+            <div class="proposal-rate">pro Monat</div>
+            <div class="proposal-choice">
+              <label><input type="radio" name="save_wertschriften" value="ja"> Ja</label>
+              <label><input type="radio" name="save_wertschriften" value="nein" checked> Nein</label>
+            </div>
+          </div>
+        `;
+      }
+    }
+    
+    // --- UNTERSCHRIFTEN ---
+    const sigNameB1 = q('#sig_name_b1');
+    const sigNameB2 = q('#sig_name_b2');
+    const sigBlockB2 = q('#sig_block_b2');
+    
+    if (sigNameB1) sigNameB1.textContent = b1Name;
+    if (sigNameB2) sigNameB2.textContent = b2Name || 'Käufer 2';
+    if (sigBlockB2) sigBlockB2.style.display = hasB2 ? 'block' : 'none';
+    
+    // Event Listener für Sachversicherungen -> Vollmacht-Text
+    setupSachversicherungListeners();
+  }
+  
+  function setupSachversicherungListeners() {
+    const sachRadios = qAll('input[name^="sach_"]');
+    const mandateSachText = q('#mandate_sach_text');
+    
+    const updateMandateText = () => {
+      const anyChecked = Array.from(sachRadios).some(r => r.value === 'ja' && r.checked);
+      if (mandateSachText) {
+        mandateSachText.style.display = anyChecked ? 'block' : 'none';
+      }
+    };
+    
+    sachRadios.forEach(radio => {
+      radio.addEventListener('change', updateMandateText);
+    });
+    
+    updateMandateText();
+  }
+
   // --- TRANCHEN-VERWALTUNG ---
   
   function getProductOptions() {
@@ -1077,6 +1514,7 @@
       </div>
       <div class="tranche-input-group">
         <input type="text" class="money tr-amount" value="${fmtCHF(amount)}">
+        <span class="tranche-warning" style="display:none; font-size:11px; color:var(--danger);">Min. CHF 100'000</span>
       </div>
       <div class="tranche-input-group">
         <input type="number" step="0.01" class="tr-rate" value="${rate}" placeholder="Zins %">
@@ -1085,14 +1523,29 @@
     `;
     
     const amountInput = row.querySelector('.tr-amount');
+    const warningSpan = row.querySelector('.tranche-warning');
     const rateInput = row.querySelector('.tr-rate');
     const deleteBtn = row.querySelector('.btn-del-tranche');
     
+    const validateAmount = () => {
+      const val = parseCHF(amountInput.value);
+      if (val > 0 && val < 100000) {
+        warningSpan.style.display = 'block';
+        amountInput.style.borderColor = 'var(--danger)';
+      } else {
+        warningSpan.style.display = 'none';
+        amountInput.style.borderColor = '#cfcfcf';
+      }
+    };
+    
     amountInput.addEventListener('change', (e) => {
       e.target.value = fmtCHF(parseCHF(e.target.value));
+      validateAmount();
       updateTrancheZero();
       reCalcP4();
     });
+    
+    amountInput.addEventListener('blur', validateAmount);
     
     rateInput.addEventListener('input', reCalcP4);
     
@@ -1132,6 +1585,7 @@
       container.innerHTML = '';
     }
     addTrancheHTML(data.mortgage, 1.8);
+    setupAmortizationListeners();
     reCalcP4();
   }
 
@@ -1265,6 +1719,57 @@
         hideSection('#sectionResultsP5');
         setActiveStep(4);
         q('#sectionResultsP4')?.scrollIntoView({ behavior: 'smooth' });
+      });
+    }
+    
+    const btnToP6 = q('#btnToPhase6');
+    if (btnToP6) {
+      btnToP6.addEventListener('click', () => {
+        showSection('#sectionResultsP6');
+        renderP6();
+        setActiveStep(6);
+      });
+    }
+    
+    const btnBackToP5 = q('#btnBackToP5');
+    if (btnBackToP5) {
+      btnBackToP5.addEventListener('click', () => {
+        hideSection('#sectionResultsP6');
+        setActiveStep(5);
+        q('#sectionResultsP5')?.scrollIntoView({ behavior: 'smooth' });
+      });
+    }
+    
+    const btnPrint = q('#btnPrint');
+    if (btnPrint) {
+      btnPrint.addEventListener('click', () => {
+        window.print();
+      });
+    }
+    
+    const btnPDF = q('#btnPDF');
+    if (btnPDF) {
+      btnPDF.addEventListener('click', () => {
+        const container = document.querySelector('.container');
+        const element = document.querySelector('main');
+        if (!element) return;
+        
+        // Füge PDF-Export Klasse hinzu für optimiertes Layout
+        if (container) container.classList.add('pdf-export');
+        
+        const opt = {
+          margin: [10, 10, 10, 10],
+          filename: 'Hypotheken-Analyse.pdf',
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+        };
+        
+        // Erzeuge PDF
+        html2pdf().set(opt).from(element).save().then(() => {
+          // Entferne PDF-Export Klasse nach Erstellung
+          if (container) container.classList.remove('pdf-export');
+        });
       });
     }
     

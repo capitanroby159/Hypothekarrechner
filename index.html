@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Schweizer Hypotheken-Cockpit</title>
   <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <link rel="stylesheet" href="./css/styles.css">
 </head>
 <body>
@@ -18,6 +19,7 @@
     <div id="step3-ind" class="step">3. Risiken</div>
     <div id="step4-ind" class="step">4. Produkt</div>
     <div id="step5-ind" class="step">5. Zusammenfassung</div>
+    <div id="step6-ind" class="step">6. Vollmacht</div>
   </div>
 
   <!-- PHASE 1: DATENEINGABE -->
@@ -464,8 +466,49 @@
           Hypothek: <strong id="p3_targetHypo">CHF 0</strong><br>
           <span id="p3_deltaDisplay" style="font-size:0.8rem"></span>
         </p>
+        <p style="font-size:0.75rem; color:#999; margin-bottom:15px; font-style:italic;">
+          * Die angegebenen Zinssätze sind unverbindliche Richtwerte und können je nach Anbieter und Bonität variieren.<br>
+          * Mindestbetrag pro Tranche: CHF 100'000
+        </p>
         <div id="trancheContainer"></div>
         <button id="btnAddTranche" class="btn-small-ghost no-print" style="margin-top:10px;">+ Tranche hinzufügen</button>
+        
+        <!-- Amortisationsart -->
+        <div id="amortTypeSection" style="display:none; margin-top:20px; padding-top:15px; border-top:1px solid var(--border);">
+          <h4 style="margin:0 0 10px; color:var(--brand); font-size:0.95rem;">Amortisation der 2. Hypothek</h4>
+          <p style="font-size:0.8rem; color:#666; margin-bottom:12px;">
+            Monatliche Amortisation: <strong id="p4_amortMonthly">CHF 0</strong>
+          </p>
+          
+          <div style="display:flex; gap:15px; margin-bottom:15px;">
+            <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+              <input type="radio" name="amortType" value="direct" style="width:18px; height:18px;">
+              <span>Direkt</span>
+            </label>
+            <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+              <input type="radio" name="amortType" value="indirect" checked style="width:18px; height:18px;">
+              <span>Indirekt (3a)</span>
+            </label>
+            <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+              <input type="radio" name="amortType" value="mix" style="width:18px; height:18px;">
+              <span>Mix</span>
+            </label>
+          </div>
+          
+          <div id="amortMixFields" style="display:none; background:#f8fafc; padding:12px; border-radius:6px;">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+              <div>
+                <label style="font-size:12px; color:#666;">Direkte Amortisation (mtl.)</label>
+                <input type="text" id="amortDirectAmount" class="money" value="0" style="margin-top:4px;">
+              </div>
+              <div>
+                <label style="font-size:12px; color:#666;">Via Säule 3a (mtl.)</label>
+                <input type="text" id="amort3aAmount" class="money" value="0" style="margin-top:4px;">
+              </div>
+            </div>
+            <p id="amortMixTotal" style="font-size:12px; color:#888; margin:10px 0 0; text-align:right;"></p>
+          </div>
+        </div>
       </div>
       <div class="chart-box" style="min-height:0; height:100%;">
         <div class="chart-title">Zusammensetzung Kosten (Real)</div>
@@ -552,6 +595,139 @@
         <div class="kpi-value" style="font-size:18px;">Keine kritischen Lücken</div>
         <div class="kpi-sub">Ihre Finanzierung ist solide abgesichert.</div>
       </div>
+    </div>
+
+    <div class="actions no-print" style="justify-content: flex-start; margin-top:30px;">
+      <button id="btnToPhase6" class="btn btn-primary">Weiter zu Lösungen & Vollmacht</button>
+    </div>
+  </div>
+
+  <!-- PHASE 6: LÖSUNGEN & VOLLMACHT -->
+  <div id="sectionResultsP6" class="collapsible collapsed" style="margin-top:40px; border-top:4px solid var(--ok); padding-top:20px">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
+      <h2 style="color:var(--ok);">Lösungen - Unser Vorschlag</h2>
+      <button id="btnBackToP5" class="btn btn-ghost no-print">Zurück</button>
+    </div>
+
+    <p style="margin-bottom:25px; color:#666; font-size:14px;">
+      Basierend auf der Analyse empfehlen wir folgende Produkte. Bitte wählen Sie, für welche Positionen wir Offerten einholen sollen.
+    </p>
+
+    <!-- HYPOTHEK -->
+    <div class="proposal-section">
+      <h3 class="proposal-title">Hypothek</h3>
+      <p class="proposal-hint">* Richtzinse sind unverbindliche Schätzungen und können je nach Anbieter variieren.</p>
+      <div class="proposal-table" id="proposal_hypothek">
+        <!-- Dynamisch gefüllt -->
+      </div>
+    </div>
+
+    <!-- VERSICHERUNGEN PERSONEN -->
+    <div class="proposal-section">
+      <h3 class="proposal-title">Personenversicherungen</h3>
+      <p class="proposal-hint">Absicherung basierend auf der Risikoanalyse</p>
+      <div class="proposal-table" id="proposal_insurance">
+        <!-- Dynamisch gefüllt -->
+      </div>
+    </div>
+
+    <!-- SACHVERSICHERUNGEN -->
+    <div class="proposal-section">
+      <h3 class="proposal-title">Sachversicherungen</h3>
+      <p class="proposal-hint">Prüfung und Optimierung der Deckungen rund ums Eigenheim</p>
+      <div class="proposal-table">
+        <div class="proposal-row">
+          <div class="proposal-product">Gebäudeversicherung</div>
+          <div class="proposal-amount">Prüfung & Beratung</div>
+          <div class="proposal-choice">
+            <label><input type="radio" name="sach_gebaeude" value="ja"> Ja</label>
+            <label><input type="radio" name="sach_gebaeude" value="nein" checked> Nein</label>
+          </div>
+        </div>
+        <div class="proposal-row">
+          <div class="proposal-product">Privathaftpflichtversicherung</div>
+          <div class="proposal-amount">Prüfung & Beratung</div>
+          <div class="proposal-choice">
+            <label><input type="radio" name="sach_haftpflicht" value="ja"> Ja</label>
+            <label><input type="radio" name="sach_haftpflicht" value="nein" checked> Nein</label>
+          </div>
+        </div>
+        <div class="proposal-row">
+          <div class="proposal-product">Hausratversicherung</div>
+          <div class="proposal-amount">Prüfung & Beratung</div>
+          <div class="proposal-choice">
+            <label><input type="radio" name="sach_hausrat" value="ja"> Ja</label>
+            <label><input type="radio" name="sach_hausrat" value="nein" checked> Nein</label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SPAREN & VORSORGE -->
+    <div class="proposal-section">
+      <h3 class="proposal-title">Sparen & Vorsorge</h3>
+      <p class="proposal-hint">Empfohlene monatliche Sparbeträge</p>
+      <div class="proposal-table" id="proposal_saving">
+        <!-- Dynamisch gefüllt -->
+      </div>
+    </div>
+
+    <!-- VOLLMACHT -->
+    <div class="mandate-section">
+      <h3 class="mandate-title">Vollmacht & Datenschutzerklärung</h3>
+      
+      <div class="mandate-text">
+        <p>
+          Hiermit erteile(n) ich/wir der Firma <strong>OVP Partner GmbH</strong> die Vollmacht, 
+          in unserem Namen Offertanfragen und Verhandlungen mit Finanzinstituten (Banken und 
+          Versicherungen) für die oben ausgewählten Produkte zu führen.
+        </p>
+        <p id="mandate_sach_text" style="display:none;">
+          Zusätzlich beauftrage(n) ich/wir OVP Partner GmbH mit der Prüfung und Beratung 
+          bezüglich der ausgewählten Sachversicherungen (Gebäude-, Privathaftpflicht- 
+          und/oder Hausratversicherung).
+        </p>
+        <p>
+          Die Firma OVP Partner GmbH verpflichtet sich, alle persönlichen Daten streng 
+          vertraulich zu behandeln und die geltenden Datenschutzbestimmungen (DSG) einzuhalten. 
+          Die Daten werden ausschliesslich für die oben genannten Zwecke verwendet und nicht 
+          an unbeteiligte Dritte weitergegeben.
+        </p>
+        <p>
+          Diese Vollmacht kann jederzeit schriftlich widerrufen werden.
+        </p>
+      </div>
+
+      <div class="signature-section">
+        <div class="signature-row">
+          <div class="signature-field">
+            <label>Ort, Datum</label>
+            <div class="signature-line" id="sig_date"></div>
+          </div>
+        </div>
+        
+        <div class="signature-row">
+          <div class="signature-field" id="sig_block_b1">
+            <label>Käufer 1</label>
+            <div class="signature-line"></div>
+            <div class="signature-name" id="sig_name_b1"></div>
+          </div>
+          <div class="signature-field" id="sig_block_b2" style="display:none;">
+            <label>Käufer 2</label>
+            <div class="signature-line"></div>
+            <div class="signature-name" id="sig_name_b2"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions no-print" style="justify-content: center; margin-top:30px; gap:20px;">
+      <button id="btnPrint" class="btn btn-primary" style="background:var(--ok);">
+        🖨️ Dokument drucken
+      </button>
+      <button id="btnPDF" class="btn btn-primary" style="background:#003366;">
+        📄 Als PDF speichern
+      </button>
     </div>
   </div>
 

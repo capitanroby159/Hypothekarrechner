@@ -131,17 +131,377 @@ input:focus, select:focus{outline:none; border-color:var(--brand)}
 .banner { padding: 15px; border-radius: 8px; margin-bottom: 15px; }
 .banner.error { background: var(--danger-bg); border: 1px solid var(--danger); color: var(--danger); }
 
-/* Empfehlungskarten */
+/* Empfehlungskarten - Base */
 .rec-card { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 16px; border-left: 5px solid var(--danger); }
-.rec-card.warn { border-left-color: var(--warning); }
-.rec-card.info { border-left-color: #2980b9; }
 .rec-card-title { font-weight: 700; font-size: 14px; color: var(--brand); margin-bottom: 8px; }
 .rec-card-body { font-size: 13px; color: #555; line-height: 1.5; }
 .rec-card-value { font-size: 18px; font-weight: 800; color: var(--danger); margin: 10px 0; }
-.rec-card.warn .rec-card-value { color: var(--warning); }
-.rec-card.info .rec-card-value { color: #2980b9; }
 .rec-card-hint { font-size: 11px; color: #888; margin-top: 8px; font-style: italic; }
+
+/* Empfehlungskarten - Alert (Rot/Kritisch) */
+.rec-card.alert { 
+    border-left-color: var(--danger); 
+    background: var(--danger-bg);
+}
+.rec-card.alert .rec-card-value { color: var(--danger); }
+
+/* Empfehlungskarten - Warn (Gelb/Moderat) */
+.rec-card.warn { 
+    border-left-color: var(--warning); 
+    background: var(--warning-bg);
+}
+.rec-card.warn .rec-card-value { color: var(--warning); }
+
+/* Empfehlungskarten - Info (Blau) */
+.rec-card.info { 
+    border-left-color: #2980b9; 
+    background: #f0f7ff;
+}
+.rec-card.info .rec-card-value { color: #2980b9; }
+
+/* Empfehlungskarten - OK (Grün) */
+.rec-card.ok { 
+    border-left-color: var(--ok); 
+    background: var(--ok-bg);
+}
+.rec-card.ok .rec-card-value { color: var(--ok); }
+
+/* Phase 6: Lösungen & Vollmacht */
+.proposal-section {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.proposal-title {
+    color: var(--brand);
+    font-size: 1.1rem;
+    margin: 0 0 5px 0;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--brand-light);
+}
+
+.proposal-hint {
+    font-size: 12px;
+    color: #888;
+    margin: 0 0 15px 0;
+    font-style: italic;
+}
+
+.proposal-table {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.proposal-row {
+    display: grid;
+    grid-template-columns: 2fr 1.5fr 1fr 150px;
+    gap: 15px;
+    align-items: center;
+    padding: 12px 15px;
+    background: #f8fafc;
+    border-radius: 6px;
+    border-left: 3px solid var(--border);
+}
+
+/* Kritisch (Rot) - Wichtige Lücke, Ja vorausgewählt */
+.proposal-row.critical {
+    border-left-color: var(--danger);
+    background: var(--danger-bg);
+}
+
+/* Moderat (Gelb) - Kleinere Lücke, Nein vorausgewählt */
+.proposal-row.moderate {
+    border-left-color: var(--warning);
+    background: var(--warning-bg);
+}
+
+/* Info (Blau) - Proaktive Empfehlung (Sparen) */
+.proposal-row.info {
+    border-left-color: #2980b9;
+    background: #f0f7ff;
+}
+
+/* Neutral (Grau) - Hypothek */
+.proposal-row.neutral {
+    border-left-color: var(--brand);
+    background: var(--brand-light);
+}
+
+.proposal-product {
+    font-weight: 600;
+    color: #333;
+    font-size: 14px;
+}
+
+.proposal-product small {
+    display: block;
+    font-weight: 400;
+    color: #888;
+    font-size: 11px;
+    margin-top: 2px;
+}
+
+.proposal-amount {
+    font-weight: 700;
+    color: var(--brand);
+    font-size: 14px;
+}
+
+.proposal-rate {
+    font-size: 13px;
+    color: #666;
+}
+
+.proposal-choice {
+    display: flex;
+    gap: 15px;
+    justify-content: flex-end;
+}
+
+.proposal-choice label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    margin: 0;
+}
+
+.proposal-choice input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.proposal-input {
+    width: 120px;
+    padding: 6px 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 13px;
+    text-align: right;
+}
+
+/* Vollmacht Section */
+.mandate-section {
+    background: #fff;
+    border: 2px solid var(--brand);
+    border-radius: 8px;
+    padding: 25px;
+    margin-top: 30px;
+}
+
+.mandate-title {
+    color: var(--brand);
+    font-size: 1.2rem;
+    margin: 0 0 20px 0;
+    text-align: center;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--border);
+}
+
+.mandate-text {
+    font-size: 13px;
+    line-height: 1.7;
+    color: #444;
+    margin-bottom: 30px;
+}
+
+.mandate-text p {
+    margin: 0 0 12px 0;
+}
+
+.signature-section {
+    margin-top: 40px;
+}
+
+.signature-row {
+    display: flex;
+    gap: 40px;
+    margin-bottom: 30px;
+}
+
+.signature-field {
+    flex: 1;
+    max-width: 300px;
+}
+
+.signature-field label {
+    font-size: 12px;
+    color: #888;
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-bottom: 40px;
+    display: block;
+}
+
+.signature-line {
+    border-bottom: 1px solid #333;
+    height: 50px;
+    margin-bottom: 5px;
+}
+
+.signature-name {
+    font-size: 12px;
+    color: #666;
+}
+
+/* Print & PDF Styles */
+@media print {
+    .no-print { display: none !important; }
+    
+    body { 
+        background: #fff; 
+        padding: 0;
+        font-size: 11px;
+    }
+    
+    .container { 
+        max-width: 100%; 
+    }
+    
+    .collapsible { 
+        max-height: none !important; 
+        opacity: 1 !important; 
+        overflow: visible !important;
+    }
+    
+    .collapsed { 
+        display: none !important; 
+    }
+    
+    #sectionResultsP6 {
+        display: block !important;
+        max-height: none !important;
+        opacity: 1 !important;
+    }
+    
+    .proposal-section, .mandate-section {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+    
+    .mandate-section {
+        border-width: 1px;
+    }
+    
+    .signature-line {
+        height: 40px;
+    }
+    
+    h1, h2 {
+        font-size: 1.2rem;
+    }
+    
+    .proposal-row {
+        padding: 8px 10px;
+    }
+}
+
+/* PDF Export Optimization */
+.pdf-export {
+    background: #fff;
+    padding: 20px;
+}
+
+.pdf-export .no-print { display: none !important; }
+
+.pdf-export #sectionInputs {
+    page-break-after: always;
+    padding: 20px 0;
+}
+
+.pdf-export #sectionResultsP1 {
+    page-break-after: always;
+    padding: 20px 0;
+    max-height: none !important;
+    opacity: 1 !important;
+}
+
+.pdf-export #sectionResultsP2 {
+    page-break-after: always;
+    padding: 20px 0;
+    max-height: none !important;
+    opacity: 1 !important;
+}
+
+.pdf-export #sectionResultsRisk {
+    page-break-after: always;
+    padding: 20px 0;
+    max-height: none !important;
+    opacity: 1 !important;
+}
+
+.pdf-export #sectionResultsP4 {
+    page-break-after: always;
+    padding: 20px 0;
+    max-height: none !important;
+    opacity: 1 !important;
+}
+
+.pdf-export #sectionResultsP5 {
+    page-break-after: always;
+    padding: 20px 0;
+    max-height: none !important;
+    opacity: 1 !important;
+}
+
+.pdf-export #sectionResultsP6 {
+    padding: 20px 0;
+    max-height: none !important;
+    opacity: 1 !important;
+}
+
+.pdf-export .steps { display: none; }
+.pdf-export h1 { page-break-after: avoid; }
+.pdf-export .collapsible { margin-top: 0; margin-bottom: 0; }
+
+.pdf-export .chart-grid, .pdf-export .p3-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+}
+
+.pdf-export .tiles, .pdf-export .tiles-p3 {
+    grid-template-columns: 1fr;
+}
+
+.pdf-export .risk-grid {
+    grid-template-columns: 2fr 2fr;
+}
+
+.pdf-export .risk-grid-3 {
+    grid-template-columns: 1fr;
+}
+
+.pdf-export .proposal-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+}
+
+@media (max-width: 900px) {
+    .proposal-row {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+    
+    .proposal-choice {
+        justify-content: flex-start;
+    }
+    
+    .signature-row {
+        flex-direction: column;
+        gap: 30px;
+    }
+    
+    .signature-field {
+        max-width: 100%;
+    }
+}
 
 @media(max-width: 900px) { .p3-grid, .tiles-p3, .risk-grid, .risk-grid-3 { grid-template-columns: 1fr; } }
 @media(max-width: 768px) { .tiles { grid-template-columns: 1fr; } .grid-3 { grid-template-columns: 1fr; } .chart-grid { grid-template-columns: 1fr; } }
-@media print { .no-print { display: none !important; } }
