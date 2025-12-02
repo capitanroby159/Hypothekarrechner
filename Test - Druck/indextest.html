@@ -1,0 +1,1453 @@
+<!doctype html>
+<html lang="de-CH">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Schweizer Hypotheken-Cockpit - Finanzierungsanalyse und Tragbarkeitsrechnung">
+  <title>Schweizer Hypotheken-Cockpit | OVP Partner GmbH</title>
+  
+  <!-- Preload kritische Ressourcen -->
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="./css/styles.css">
+  
+  <!-- Scripts (defer für bessere Performance) -->
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
+  <script src="./js/hypothek.js" defer></script>
+</head>
+<body>
+
+<!-- Skip-Link für Accessibility -->
+<a href="#main-content" class="skip-link">Zum Hauptinhalt springen</a>
+
+<header class="app-header no-print">
+  <h1>Schweizer Hypotheken-Cockpit</h1>
+  
+  <nav class="progress-nav" aria-label="Analyse-Fortschritt">
+    <ol class="steps" role="list">
+      <li id="step1-ind" class="step active" aria-current="step">
+        <span class="step-number">1</span>
+        <span class="step-label">Daten</span>
+      </li>
+      <li id="step2-ind" class="step">
+        <span class="step-number">2</span>
+        <span class="step-label">Tragbarkeit</span>
+      </li>
+      <li id="step3-ind" class="step">
+        <span class="step-number">3</span>
+        <span class="step-label">Risiken</span>
+      </li>
+      <li id="step4-ind" class="step">
+        <span class="step-number">4</span>
+        <span class="step-label">Produkt</span>
+      </li>
+      <li id="step5-ind" class="step">
+        <span class="step-number">5</span>
+        <span class="step-label">Zusammenfassung</span>
+      </li>
+      <li id="step6-ind" class="step">
+        <span class="step-number">6</span>
+        <span class="step-label">Vollmacht</span>
+      </li>
+    </ol>
+  </nav>
+</header>
+
+<main id="main-content" class="container">
+
+  <!-- ============================================
+       PHASE 1: DATENEINGABE
+       ============================================ -->
+  <article id="sectionInputs" class="phase-section collapsible" aria-labelledby="phase1-title">
+    <h2 id="phase1-title" class="visually-hidden">Phase 1: Dateneingabe</h2>
+    
+    <form id="mainForm" novalidate aria-describedby="form-instructions">
+      <p id="form-instructions" class="visually-hidden">
+        Füllen Sie alle relevanten Felder aus. Pflichtfelder sind mit einem Stern markiert.
+      </p>
+      
+      <!-- Käufer-Daten Grid -->
+      <section class="buyer-section" aria-labelledby="buyers-heading">
+        <h3 id="buyers-heading" class="visually-hidden">Käuferdaten</h3>
+        
+        <div class="buyer-grid-container" role="grid">
+          <!-- Header Row -->
+          <div class="buyer-header-label" role="columnheader"></div>
+          <div class="buyer-header" role="columnheader" id="col-buyer1">Käufer 1 (Hauptverdiener)</div>
+          <div class="buyer-header" role="columnheader" id="col-buyer2">Käufer 2 (Partner/in)</div>
+
+          <!-- PERSONALIEN -->
+          <div class="buyer-separator" role="rowgroup">
+            <h4>Personalien & Wohnsituation</h4>
+          </div>
+          
+          <div class="buyer-label" role="rowheader">
+            <label id="label-name">Name / Vorname</label>
+          </div>
+          <div role="gridcell">
+            <input type="text" 
+                   id="b1_name" 
+                   name="b1_name"
+                   aria-labelledby="label-name col-buyer1"
+                   placeholder="Muster Hans"
+                   autocomplete="name">
+          </div>
+          <div role="gridcell">
+            <input type="text" 
+                   id="b2_name" 
+                   name="b2_name"
+                   aria-labelledby="label-name col-buyer2"
+                   placeholder="Muster Anna"
+                   autocomplete="name">
+          </div>
+          
+          <div class="buyer-label" role="rowheader">
+            <label id="label-address">Strasse / Nr.</label>
+          </div>
+          <div role="gridcell">
+            <input type="text" 
+                   id="b1_address" 
+                   name="b1_address"
+                   aria-labelledby="label-address col-buyer1"
+                   placeholder="Musterstrasse 1"
+                   autocomplete="street-address">
+          </div>
+          <div role="gridcell">
+            <input type="text" 
+                   id="b2_address" 
+                   name="b2_address"
+                   aria-labelledby="label-address col-buyer2"
+                   placeholder="Musterstrasse 1"
+                   autocomplete="street-address">
+          </div>
+
+          <div class="buyer-label" role="rowheader">
+            <label id="label-city">PLZ / Ort</label>
+          </div>
+          <div role="gridcell">
+            <input type="text" 
+                   id="b1_city" 
+                   name="b1_city"
+                   aria-labelledby="label-city col-buyer1"
+                   placeholder="8000 Zürich"
+                   autocomplete="postal-code">
+          </div>
+          <div role="gridcell">
+            <input type="text" 
+                   id="b2_city" 
+                   name="b2_city"
+                   aria-labelledby="label-city col-buyer2"
+                   placeholder="8000 Zürich"
+                   autocomplete="postal-code">
+          </div>
+
+          <div class="buyer-label" role="rowheader">
+            <label id="label-birth">Geburtsdatum</label>
+          </div>
+          <div role="gridcell">
+            <input type="date" 
+                   id="b1_birth" 
+                   name="b1_birth"
+                   aria-labelledby="label-birth col-buyer1"
+                   autocomplete="bday">
+          </div>
+          <div role="gridcell">
+            <input type="date" 
+                   id="b2_birth" 
+                   name="b2_birth"
+                   aria-labelledby="label-birth col-buyer2"
+                   autocomplete="bday">
+          </div>
+
+          <div class="buyer-label" role="rowheader">
+            <label id="label-civil">Zivilstand</label>
+          </div>
+          <div role="gridcell">
+            <select id="b1_civil" 
+                    name="b1_civil"
+                    aria-labelledby="label-civil col-buyer1">
+              <option value="ledig">Ledig</option>
+              <option value="verheiratet">Verheiratet</option>
+              <option value="konkubinat">Konkubinat</option>
+              <option value="geschieden">Geschieden</option>
+            </select>
+          </div>
+          <div role="gridcell">
+            <select id="b2_civil" 
+                    name="b2_civil"
+                    aria-labelledby="label-civil col-buyer2">
+              <option value="">— Bitte wählen —</option>
+              <option value="ledig">Ledig</option>
+              <option value="verheiratet">Verheiratet</option>
+              <option value="konkubinat">Konkubinat</option>
+              <option value="geschieden">Geschieden</option>
+            </select>
+          </div>
+
+          <div class="buyer-label" role="rowheader">
+            <label id="label-kids">Kinder (Anzahl)</label>
+          </div>
+          <div role="gridcell">
+            <input type="number" 
+                   id="b1_kids" 
+                   name="b1_kids"
+                   aria-labelledby="label-kids col-buyer1"
+                   value="0" 
+                   min="0" 
+                   max="10">
+          </div>
+          <div role="gridcell">
+            <input type="number" 
+                   id="b2_kids" 
+                   name="b2_kids"
+                   aria-labelledby="label-kids col-buyer2"
+                   value="0" 
+                   min="0" 
+                   max="10">
+          </div>
+
+          <!-- BERUF & EINKOMMEN -->
+          <div class="buyer-separator" role="rowgroup">
+            <h4>Beruf & Einkommen</h4>
+          </div>
+          
+          <div class="buyer-label" role="rowheader">
+            <label id="label-job">Beruf / Funktion</label>
+          </div>
+          <div role="gridcell">
+            <input type="text" 
+                   id="b1_job" 
+                   name="b1_job"
+                   aria-labelledby="label-job col-buyer1"
+                   placeholder="z.B. Architekt"
+                   autocomplete="organization-title">
+          </div>
+          <div role="gridcell">
+            <input type="text" 
+                   id="b2_job" 
+                   name="b2_job"
+                   aria-labelledby="label-job col-buyer2"
+                   placeholder="z.B. Lehrerin"
+                   autocomplete="organization-title">
+          </div>
+
+          <div class="buyer-label" role="rowheader">
+            <label id="label-since">Angestellt seit</label>
+          </div>
+          <div role="gridcell">
+            <input type="text" 
+                   id="b1_since" 
+                   name="b1_since"
+                   aria-labelledby="label-since col-buyer1"
+                   placeholder="MM.JJJJ"
+                   pattern="\d{2}\.\d{4}">
+          </div>
+          <div role="gridcell">
+            <input type="text" 
+                   id="b2_since" 
+                   name="b2_since"
+                   aria-labelledby="label-since col-buyer2"
+                   placeholder="MM.JJJJ"
+                   pattern="\d{2}\.\d{4}">
+          </div>
+          
+          <div class="buyer-label" role="rowheader">
+            <label id="label-employer">Arbeitgeber</label>
+          </div>
+          <div role="gridcell">
+            <input type="text" 
+                   id="b1_employer" 
+                   name="b1_employer"
+                   aria-labelledby="label-employer col-buyer1"
+                   placeholder="Firma AG"
+                   autocomplete="organization">
+          </div>
+          <div role="gridcell">
+            <input type="text" 
+                   id="b2_employer" 
+                   name="b2_employer"
+                   aria-labelledby="label-employer col-buyer2"
+                   placeholder="Firma AG"
+                   autocomplete="organization">
+          </div>
+
+          <div class="buyer-label" role="rowheader">
+            <label id="label-income">Jahreseinkommen (Brutto)</label>
+          </div>
+          <div role="gridcell">
+            <input type="text" 
+                   id="b1_income" 
+                   name="b1_income"
+                   class="money" 
+                   aria-labelledby="label-income col-buyer1"
+                   value="120'000"
+                   inputmode="numeric">
+          </div>
+          <div role="gridcell">
+            <input type="text" 
+                   id="b2_income" 
+                   name="b2_income"
+                   class="money"
+                   aria-labelledby="label-income col-buyer2"
+                   value="60'000"
+                   inputmode="numeric">
+          </div>
+
+          <!-- FINANZIELLE VERPFLICHTUNGEN -->
+          <div class="buyer-separator" role="rowgroup">
+            <h4>Finanzielle Verpflichtungen</h4>
+          </div>
+          
+          <div class="buyer-label" role="rowheader">
+            <label id="label-debt">Laufende Kredite/Leasing (Jahr)</label>
+          </div>
+          <div role="gridcell">
+            <input type="text" 
+                   id="b1_debt" 
+                   name="b1_debt"
+                   class="money"
+                   aria-labelledby="label-debt col-buyer1"
+                   value="0"
+                   inputmode="numeric">
+          </div>
+          <div role="gridcell">
+            <input type="text" 
+                   id="b2_debt" 
+                   name="b2_debt"
+                   class="money"
+                   aria-labelledby="label-debt col-buyer2"
+                   value="0"
+                   inputmode="numeric">
+          </div>
+
+          <div class="buyer-label" role="rowheader">
+            <label id="label-alimony">Alimente (Verpflichtung/Jahr)</label>
+          </div>
+          <div role="gridcell">
+            <input type="text" 
+                   id="b1_alimony" 
+                   name="b1_alimony"
+                   class="money"
+                   aria-labelledby="label-alimony col-buyer1"
+                   value="0"
+                   inputmode="numeric">
+          </div>
+          <div role="gridcell">
+            <input type="text" 
+                   id="b2_alimony" 
+                   name="b2_alimony"
+                   class="money"
+                   aria-labelledby="label-alimony col-buyer2"
+                   value="0"
+                   inputmode="numeric">
+          </div>
+
+          <!-- VERMÖGEN -->
+          <div class="buyer-separator" role="rowgroup">
+            <h4>Verfügbares Vermögen (Bestand)</h4>
+          </div>
+          
+          <div class="buyer-label" role="rowheader">
+            <label id="label-bank">Konto / Bankguthaben</label>
+          </div>
+          <div role="gridcell">
+            <input type="text" 
+                   id="b1_asset_bank" 
+                   name="b1_asset_bank"
+                   class="money"
+                   aria-labelledby="label-bank col-buyer1"
+                   value="80'000"
+                   inputmode="numeric">
+          </div>
+          <div role="gridcell">
+            <input type="text" 
+                   id="b2_asset_bank" 
+                   name="b2_asset_bank"
+                   class="money"
+                   aria-labelledby="label-bank col-buyer2"
+                   value="40'000"
+                   inputmode="numeric">
+          </div>
+
+          <div class="buyer-label" role="rowheader">
+            <label id="label-sec">Wertschriften / Depot</label>
+          </div>
+          <div role="gridcell">
+            <input type="text" 
+                   id="b1_asset_sec" 
+                   name="b1_asset_sec"
+                   class="money"
+                   aria-labelledby="label-sec col-buyer1"
+                   value="0"
+                   inputmode="numeric">
+          </div>
+          <div role="gridcell">
+            <input type="text" 
+                   id="b2_asset_sec" 
+                   name="b2_asset_sec"
+                   class="money"
+                   aria-labelledby="label-sec col-buyer2"
+                   value="0"
+                   inputmode="numeric">
+          </div>
+
+          <div class="buyer-label" role="rowheader">
+            <label id="label-3a">Säule 3a</label>
+          </div>
+          <div role="gridcell">
+            <input type="text" 
+                   id="b1_asset_3a" 
+                   name="b1_asset_3a"
+                   class="money"
+                   aria-labelledby="label-3a col-buyer1"
+                   value="20'000"
+                   inputmode="numeric">
+          </div>
+          <div role="gridcell">
+            <input type="text" 
+                   id="b2_asset_3a" 
+                   name="b2_asset_3a"
+                   class="money"
+                   aria-labelledby="label-3a col-buyer2"
+                   value="20'000"
+                   inputmode="numeric">
+          </div>
+
+          <div class="buyer-label" role="rowheader">
+            <label id="label-pk">PK Guthaben (Vorbezug möglich)</label>
+          </div>
+          <div role="gridcell">
+            <input type="text" 
+                   id="b1_asset_pk" 
+                   name="b1_asset_pk"
+                   class="money"
+                   aria-labelledby="label-pk col-buyer1"
+                   value="150'000"
+                   inputmode="numeric">
+          </div>
+          <div role="gridcell">
+            <input type="text" 
+                   id="b2_asset_pk" 
+                   name="b2_asset_pk"
+                   class="money"
+                   aria-labelledby="label-pk col-buyer2"
+                   value="50'000"
+                   inputmode="numeric">
+          </div>
+
+          <!-- VORSORGELEISTUNGEN -->
+          <div class="buyer-separator" role="rowgroup">
+            <h4>Vorsorgeleistungen (lt. Ausweis)</h4>
+          </div>
+          
+          <div class="buyer-label" role="rowheader">
+            <label id="label-pension-old">Altersrente (Prognose p.a.)</label>
+          </div>
+          <div role="gridcell">
+            <input type="text" 
+                   id="b1_pension_old" 
+                   name="b1_pension_old"
+                   class="money input-highlight"
+                   aria-labelledby="label-pension-old col-buyer1"
+                   value="70'000"
+                   inputmode="numeric">
+          </div>
+          <div role="gridcell">
+            <input type="text" 
+                   id="b2_pension_old" 
+                   name="b2_pension_old"
+                   class="money input-highlight"
+                   aria-labelledby="label-pension-old col-buyer2"
+                   value="35'000"
+                   inputmode="numeric">
+          </div>
+
+          <div class="buyer-label" role="rowheader">
+            <label id="label-pension-inv">Invalidenrente (p.a.)</label>
+          </div>
+          <div role="gridcell">
+            <input type="text" 
+                   id="b1_pension_inv" 
+                   name="b1_pension_inv"
+                   class="money input-highlight"
+                   aria-labelledby="label-pension-inv col-buyer1"
+                   value="70'000"
+                   inputmode="numeric">
+          </div>
+          <div role="gridcell">
+            <input type="text" 
+                   id="b2_pension_inv" 
+                   name="b2_pension_inv"
+                   class="money input-highlight"
+                   aria-labelledby="label-pension-inv col-buyer2"
+                   value="30'000"
+                   inputmode="numeric">
+          </div>
+
+          <div class="buyer-label" role="rowheader">
+            <label id="label-pension-death">Hinterlassenenrente (p.a.)</label>
+          </div>
+          <div role="gridcell">
+            <input type="text" 
+                   id="b1_pension_death" 
+                   name="b1_pension_death"
+                   class="money input-highlight"
+                   aria-labelledby="label-pension-death col-buyer1"
+                   value="40'000"
+                   inputmode="numeric">
+          </div>
+          <div role="gridcell">
+            <input type="text" 
+                   id="b2_pension_death" 
+                   name="b2_pension_death"
+                   class="money input-highlight"
+                   aria-labelledby="label-pension-death col-buyer2"
+                   value="15'000"
+                   inputmode="numeric">
+          </div>
+        </div>
+      </section>
+
+      <!-- Eigenmittel-Einsatz -->
+      <fieldset class="fieldset-highlight">
+        <legend>Geplanter Einsatz Eigenmittel (Gemeinsam)</legend>
+        
+        <div class="form-grid-3">
+          <div class="form-group">
+            <label for="invest_total_hard">Einsatz Konto/Depot (Total)</label>
+            <input type="text" 
+                   id="invest_total_hard" 
+                   name="invest_total_hard"
+                   class="money input-bold"
+                   value="100'000"
+                   inputmode="numeric">
+          </div>
+          <div class="form-group">
+            <label for="invest_total_3a">Einsatz 3a (Total)</label>
+            <input type="text" 
+                   id="invest_total_3a" 
+                   name="invest_total_3a"
+                   class="money input-bold"
+                   value="30'000"
+                   inputmode="numeric">
+          </div>
+          <div class="form-group">
+            <label for="invest_total_pk">Einsatz PK (Total)</label>
+            <input type="text" 
+                   id="invest_total_pk" 
+                   name="invest_total_pk"
+                   class="money input-bold"
+                   value="100'000"
+                   inputmode="numeric">
+          </div>
+        </div>
+        
+        <output class="sum-display" for="invest_total_hard invest_total_3a invest_total_pk">
+          Total Investiert: <data id="sum_investedCapital" value="0">CHF 0</data>
+        </output>
+      </fieldset>
+
+      <!-- Objekt & Kaufnebenkosten -->
+      <fieldset>
+        <legend>Objekt & Kaufnebenkosten</legend>
+        
+        <div class="form-grid-3">
+          <div class="form-group">
+            <label for="obj_type">Nutzungsart</label>
+            <select id="obj_type" name="obj_type">
+              <option value="home">Eigenheim (selbstbewohnt)</option>
+              <option value="invest">Renditeobjekt</option>
+              <option value="holiday">Ferienobjekt</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="propertyPrice">Kaufpreis Objekt</label>
+            <input type="text" 
+                   id="propertyPrice" 
+                   name="propertyPrice"
+                   class="money"
+                   value="900'000"
+                   inputmode="numeric"
+                   required
+                   aria-required="true">
+          </div>
+          <div class="form-group">
+            <label for="renovationCost">Renovation (Investition)</label>
+            <input type="text" 
+                   id="renovationCost" 
+                   name="renovationCost"
+                   class="money"
+                   value="20'000"
+                   inputmode="numeric">
+          </div>
+        </div>
+        
+        <hr>
+        
+        <h4 class="subsection-title">Detaillierte Kaufnebenkosten</h4>
+        
+        <div class="form-grid-3">
+          <div class="form-group">
+            <label for="tax_transfer">Handänderungssteuer</label>
+            <input type="text" 
+                   id="tax_transfer" 
+                   name="tax_transfer"
+                   class="money"
+                   value="5'000"
+                   inputmode="numeric">
+          </div>
+          <div class="form-group">
+            <label for="fee_notary">Notariat</label>
+            <input type="text" 
+                   id="fee_notary" 
+                   name="fee_notary"
+                   class="money"
+                   value="2'500"
+                   inputmode="numeric">
+          </div>
+          <div class="form-group">
+            <label for="fee_registry">Grundbuch</label>
+            <input type="text" 
+                   id="fee_registry" 
+                   name="fee_registry"
+                   class="money"
+                   value="800"
+                   inputmode="numeric">
+          </div>
+          <div class="form-group">
+            <label for="fee_mortgage">Schuldbrief</label>
+            <input type="text" 
+                   id="fee_mortgage" 
+                   name="fee_mortgage"
+                   class="money"
+                   value="600"
+                   inputmode="numeric">
+          </div>
+          <div class="form-group">
+            <label for="fee_3a_prefund">Gebühr 3a-Bezug</label>
+            <input type="text" 
+                   id="fee_3a_prefund" 
+                   name="fee_3a_prefund"
+                   class="money"
+                   value="1'200"
+                   inputmode="numeric">
+          </div>
+          <div class="form-group">
+            <label for="fee_pk_wef">Gebühr PK-Bezug</label>
+            <input type="text" 
+                   id="fee_pk_wef" 
+                   name="fee_pk_wef"
+                   class="money"
+                   value="2'000"
+                   inputmode="numeric">
+          </div>
+        </div>
+        
+        <output class="sum-display" for="tax_transfer fee_notary fee_registry fee_mortgage fee_3a_prefund fee_pk_wef">
+          Total Nebenkosten: <data id="sum_buyingFees" value="0">CHF 0</data>
+        </output>
+      </fieldset>
+
+      <!-- Validierungsmeldungen -->
+      <aside id="validationBanner" 
+             class="banner error" 
+             role="alert" 
+             aria-live="polite"
+             hidden></aside>
+
+      <!-- Aktionen -->
+      <div class="form-actions no-print">
+        <button type="button" 
+                id="btnCalcPhase1" 
+                class="btn btn-primary">
+          Analyse starten
+        </button>
+      </div>
+    </form>
+  </article>
+
+  <!-- ============================================
+       PHASE 1 ERGEBNISSE: MACHBARKEIT
+       ============================================ -->
+  <article id="sectionResultsP1" 
+           class="phase-section collapsible collapsed" 
+           aria-labelledby="results-p1-title">
+    
+    <header class="phase-header">
+      <h2 id="results-p1-title">Ergebnis Phase 1: Machbarkeit</h2>
+      <button id="btnEditP1" 
+              type="button"
+              class="btn btn-ghost no-print"
+              aria-label="Zurück zur Dateneingabe">
+        Daten bearbeiten
+      </button>
+    </header>
+    
+    <!-- Chart -->
+    <figure class="chart-box" aria-labelledby="chart-p1-title">
+      <figcaption id="chart-p1-title" class="chart-title">Finanzierungsmix (Anteile in %)</figcaption>
+      <div id="chartP1" role="img" aria-label="Balkendiagramm Eigenmittel vs. Hypothek"></div>
+    </figure>
+    
+    <!-- KPI Dashboard -->
+    <section class="kpi-dashboard tiles" aria-label="Kennzahlen Machbarkeit">
+      
+      <figure class="kpi" role="group" aria-labelledby="kpi-invest-label">
+        <figcaption id="kpi-invest-label" class="kpi-label">Gesamt-Investition</figcaption>
+        <data id="t1_totalInvest" class="kpi-value" value="0">CHF 0</data>
+        <small class="kpi-sub">Kaufpreis + Renovation</small>
+      </figure>
+      
+      <figure class="kpi" id="kpi1_mortgage" role="group" aria-labelledby="kpi-mortgage-label">
+        <figcaption id="kpi-mortgage-label" class="kpi-label">Benötigte Hypothek</figcaption>
+        <data id="t1_mortgage" class="kpi-value" value="0">CHF 0</data>
+        <small id="t1_ltv" class="kpi-sub">Belehnung: 0%</small>
+      </figure>
+      
+      <figure class="kpi" role="group" aria-labelledby="kpi-equity-label">
+        <figcaption id="kpi-equity-label" class="kpi-label">Investiertes Kapital</figcaption>
+        <data id="t1_equity" class="kpi-value" value="0">CHF 0</data>
+        <small class="kpi-sub">Konto + 3a + PK</small>
+      </figure>
+      
+      <figure class="kpi warn" role="group" aria-labelledby="kpi-fees-label">
+        <figcaption id="kpi-fees-label" class="kpi-label">Kaufnebenkosten</figcaption>
+        <data id="t1_fees" class="kpi-value" value="0">CHF 0</data>
+        <small class="kpi-sub">Müssen separat bezahlt werden</small>
+      </figure>
+      
+      <figure class="kpi" id="kpi1_liquidity" role="group" aria-labelledby="kpi-cash-label">
+        <figcaption id="kpi-cash-label" class="kpi-label">Benötigte Liquidität</figcaption>
+        <data id="t1_cash" class="kpi-value" value="0">CHF 0</data>
+        <small class="kpi-sub">Einsatz + Gebühren</small>
+      </figure>
+      
+      <figure class="kpi" id="kpi1_delta" role="group" aria-labelledby="kpi-delta-label">
+        <figcaption id="kpi-delta-label" class="kpi-label">Delta zu 80%</figcaption>
+        <data id="t1_delta" class="kpi-value" value="0">CHF 0</data>
+        <small class="kpi-sub">Fehlendes EK für max. Belehnung</small>
+      </figure>
+      
+      <!-- Empfehlung -->
+      <aside class="kpi recommendation-card" id="recP1" aria-live="polite">
+        <div class="rec-box">
+          <strong id="recP1_status" class="rec-status">Status</strong>
+          <p id="recP1_text" class="rec-text">...</p>
+          <button id="btnToPhase2" 
+                  type="button"
+                  class="rec-btn no-print"
+                  hidden>
+            Weiter zu Phase 2
+          </button>
+        </div>
+      </aside>
+    </section>
+  </article>
+
+  <!-- ============================================
+       PHASE 2 ERGEBNISSE: TRAGBARKEIT
+       ============================================ -->
+  <article id="sectionResultsP2" 
+           class="phase-section collapsible collapsed phase-border-dashed" 
+           aria-labelledby="results-p2-title">
+    
+    <header class="phase-header">
+      <h2 id="results-p2-title">Ergebnis Phase 2: Tragbarkeit</h2>
+    </header>
+    
+    <!-- Charts -->
+    <div class="chart-grid">
+      <figure class="chart-box" aria-labelledby="chart-p2-bar-title">
+        <figcaption id="chart-p2-bar-title" class="chart-title">Kalkulatorische Belastung vs. Limit</figcaption>
+        <div id="chartP2_Bar" role="img" aria-label="Balkendiagramm Belastung"></div>
+      </figure>
+      
+      <figure class="chart-box" aria-labelledby="chart-p2-donut-title">
+        <figcaption id="chart-p2-donut-title" class="chart-title">Kostenaufteilung (kalkulatorisch)</figcaption>
+        <div id="chartP2_Donut" role="img" aria-label="Kreisdiagramm Kostenaufteilung"></div>
+      </figure>
+    </div>
+    
+    <!-- KPI Dashboard -->
+    <section class="kpi-dashboard tiles" aria-label="Kennzahlen Tragbarkeit">
+      
+      <figure class="kpi" id="kpi2_burden" role="group" aria-labelledby="kpi-burden-label">
+        <figcaption id="kpi-burden-label" class="kpi-label">Tragbarkeit</figcaption>
+        <data id="t2_burden" class="kpi-value" value="0">0%</data>
+        <small class="kpi-sub">Limit: 33.3%</small>
+      </figure>
+      
+      <figure class="kpi" role="group" aria-labelledby="kpi-minincome-label">
+        <figcaption id="kpi-minincome-label" class="kpi-label">Notwendiges Einkommen</figcaption>
+        <data id="t2_minIncome" class="kpi-value" value="0">CHF 0</data>
+        <small class="kpi-sub">Damit Tragbarkeit ≤ 33%</small>
+      </figure>
+      
+      <figure class="kpi kpi-hypo-split" role="group" aria-labelledby="kpi-hyposplit-label">
+        <figcaption id="kpi-hyposplit-label" class="kpi-label">Aufteilung Hypothek</figcaption>
+        <dl class="hypo-details">
+          <div class="hypo-row">
+            <dt>1. Hypo (bis 65%):</dt>
+            <dd><data id="t2_hypo1" value="0">0</data></dd>
+          </div>
+          <div class="hypo-row hypo2">
+            <dt>2. Hypo:</dt>
+            <dd><data id="t2_hypo2" value="0">0</data></dd>
+          </div>
+        </dl>
+        <small class="kpi-sub">2. Hypo muss amortisiert werden</small>
+      </figure>
+      
+      <!-- Empfehlung -->
+      <aside class="kpi recommendation-card" id="recP2" aria-live="polite">
+        <div class="rec-box">
+          <strong id="recP2_status" class="rec-status">Status</strong>
+          <p id="recP2_text" class="rec-text">...</p>
+          <button id="btnToPhase3" 
+                  type="button"
+                  class="rec-btn no-print">
+            Weiter zum Risiko-Check
+          </button>
+        </div>
+      </aside>
+    </section>
+  </article>
+
+  <!-- ============================================
+       PHASE 3: RISIKO-ANALYSE
+       ============================================ -->
+  <article id="sectionResultsRisk" 
+           class="phase-section collapsible collapsed phase-border-warning" 
+           aria-labelledby="results-risk-title">
+    
+    <header class="phase-header">
+      <h2 id="results-risk-title">Ergebnis Phase 3: Risiko-Analyse</h2>
+      <button id="btnBackToP2" 
+              type="button"
+              class="btn btn-ghost no-print">
+        Zurück
+      </button>
+    </header>
+    
+    <p class="phase-intro">
+      Basis: Kalkulatorischer Zins (5%) — Was passiert wenn...
+    </p>
+    
+    <!-- Szenarien K1 & Immobilie -->
+    <section aria-labelledby="risk-section-k1">
+      <h3 id="risk-section-k1" class="risk-header-row">
+        Szenarien: Hauptverdiener (Käufer 1) & Immobilie
+      </h3>
+      
+      <div class="risk-grid">
+        <!-- Arbeitslosigkeit K1 -->
+        <article class="risk-card" id="risk_alv" aria-labelledby="risk-alv-title">
+          <header class="risk-title">
+            <h4 id="risk-alv-title">Arbeitslosigkeit (K1)</h4>
+          </header>
+          <dl class="risk-body">
+            <dt>Taggeld K1 + Lohn K2:</dt>
+            <dd class="risk-value"><data id="val_alv" value="0">CHF 0</data></dd>
+            <dd class="risk-target" id="target_alv"></dd>
+            <dt class="risk-sub">Deckungslücke pro Jahr:</dt>
+            <dd class="risk-gap"><data id="gap_alv" value="0">CHF 0</data></dd>
+          </dl>
+          <footer class="risk-status" id="stat_alv" role="status">OK</footer>
+        </article>
+        
+        <!-- Invalidität K1 -->
+        <article class="risk-card" id="risk_iv" aria-labelledby="risk-iv-title">
+          <header class="risk-title">
+            <h4 id="risk-iv-title">Invalidität (K1)</h4>
+          </header>
+          <dl class="risk-body">
+            <dt>IV-Rente K1 + Lohn K2:</dt>
+            <dd class="risk-value"><data id="val_iv" value="0">CHF 0</data></dd>
+            <dd class="risk-target" id="target_iv"></dd>
+            <dt class="risk-sub">Deckungslücke pro Jahr:</dt>
+            <dd class="risk-gap"><data id="gap_iv" value="0">CHF 0</data></dd>
+          </dl>
+          <footer class="risk-status" id="stat_iv" role="status">OK</footer>
+        </article>
+        
+        <!-- Todesfall K1 -->
+        <article class="risk-card" id="risk_death" aria-labelledby="risk-death-title">
+          <header class="risk-title">
+            <h4 id="risk-death-title">Todesfall (K1)</h4>
+          </header>
+          <dl class="risk-body">
+            <dt>Hinterlassenenrente + Lohn K2:</dt>
+            <dd class="risk-value"><data id="val_death" value="0">CHF 0</data></dd>
+            <dd class="risk-target" id="target_death"></dd>
+            <dt class="risk-sub">Nötiges Todesfallkapital:</dt>
+            <dd class="risk-gap"><data id="gap_death" value="0">CHF 0</data></dd>
+          </dl>
+          <footer class="risk-status" id="stat_death" role="status">OK</footer>
+        </article>
+        
+        <!-- Immobilien-Crash -->
+        <article class="risk-card" id="risk_value" aria-labelledby="risk-crash-title">
+          <header class="risk-title">
+            <h4 id="risk-crash-title">Immobilien-Crash (-20%)</h4>
+          </header>
+          <dl class="risk-body">
+            <dt>Neuer Belehnungs-Max:</dt>
+            <dd class="risk-value"><data id="val_crash" value="0">CHF 0</data></dd>
+            <dt class="risk-sub">Margin Call (Nachschuss):</dt>
+            <dd class="risk-gap"><data id="gap_crash" value="0">CHF 0</data></dd>
+          </dl>
+          <footer class="risk-status" id="stat_crash" role="status">OK</footer>
+        </article>
+      </div>
+    </section>
+
+    <!-- Szenarien K2 & Markt (nur wenn 2. Käufer) -->
+    <section id="risk_row_b2" aria-labelledby="risk-section-k2" hidden>
+      <h3 id="risk-section-k2" class="risk-header-row">
+        Szenarien: Partner/in (Käufer 2) & Markt
+      </h3>
+      
+      <div class="risk-grid">
+        <!-- Arbeitslosigkeit K2 -->
+        <article class="risk-card" id="risk_alv_b2" aria-labelledby="risk-alv-b2-title">
+          <header class="risk-title">
+            <h4 id="risk-alv-b2-title">Arbeitslosigkeit (K2)</h4>
+          </header>
+          <dl class="risk-body">
+            <dt>Taggeld K2 + Lohn K1:</dt>
+            <dd class="risk-value"><data id="val_alv_b2" value="0">CHF 0</data></dd>
+            <dd class="risk-target" id="target_alv_b2"></dd>
+            <dt class="risk-sub">Deckungslücke pro Jahr:</dt>
+            <dd class="risk-gap"><data id="gap_alv_b2" value="0">CHF 0</data></dd>
+          </dl>
+          <footer class="risk-status" id="stat_alv_b2" role="status">OK</footer>
+        </article>
+        
+        <!-- Invalidität K2 -->
+        <article class="risk-card" id="risk_iv_b2" aria-labelledby="risk-iv-b2-title">
+          <header class="risk-title">
+            <h4 id="risk-iv-b2-title">Invalidität (K2)</h4>
+          </header>
+          <dl class="risk-body">
+            <dt>IV-Rente K2 + Lohn K1:</dt>
+            <dd class="risk-value"><data id="val_iv_b2" value="0">CHF 0</data></dd>
+            <dd class="risk-target" id="target_iv_b2"></dd>
+            <dt class="risk-sub">Deckungslücke pro Jahr:</dt>
+            <dd class="risk-gap"><data id="gap_iv_b2" value="0">CHF 0</data></dd>
+          </dl>
+          <footer class="risk-status" id="stat_iv_b2" role="status">OK</footer>
+        </article>
+        
+        <!-- Todesfall K2 -->
+        <article class="risk-card" id="risk_death_b2" aria-labelledby="risk-death-b2-title">
+          <header class="risk-title">
+            <h4 id="risk-death-b2-title">Todesfall (K2)</h4>
+          </header>
+          <dl class="risk-body">
+            <dt>Hinterlassenenrente + Lohn K1:</dt>
+            <dd class="risk-value"><data id="val_death_b2" value="0">CHF 0</data></dd>
+            <dd class="risk-target" id="target_death_b2"></dd>
+            <dt class="risk-sub">Nötiges Todesfallkapital:</dt>
+            <dd class="risk-gap"><data id="gap_death_b2" value="0">CHF 0</data></dd>
+          </dl>
+          <footer class="risk-status" id="stat_death_b2" role="status">OK</footer>
+        </article>
+        
+        <!-- Zins-Anstieg -->
+        <article class="risk-card" id="risk_rate" aria-labelledby="risk-rate-title">
+          <header class="risk-title">
+            <h4 id="risk-rate-title">Zins-Anstieg (auf 3.0%)</h4>
+          </header>
+          <dl class="risk-body">
+            <dt>Mögliche neue Zinslast:</dt>
+            <dd class="risk-value"><data id="val_rate_shock" value="0">CHF 0</data></dd>
+            <dt class="risk-sub">Mehrkosten pro Monat:</dt>
+            <dd class="risk-gap"><data id="gap_rate_shock" value="0">CHF 0</data></dd>
+          </dl>
+          <footer class="risk-status risk-status-info" role="status">INFO</footer>
+        </article>
+      </div>
+    </section>
+
+    <!-- Pensionierung -->
+    <section aria-labelledby="risk-section-pension">
+      <h3 id="risk-section-pension" class="risk-header-row">
+        Szenarien: Pensionierung (Tragbarkeit der 1. Hypothek)
+      </h3>
+      
+      <div class="risk-grid-3">
+        <!-- K1 pensioniert -->
+        <article class="risk-card" id="pen_1" aria-labelledby="pen-1-title">
+          <header class="risk-title">
+            <h4 id="pen-1-title">Käufer 1 pensioniert</h4>
+          </header>
+          <dl class="risk-body">
+            <dt>Rente K1 + Lohn K2:</dt>
+            <dd class="risk-value"><data id="val_pen_1" value="0">CHF 0</data></dd>
+            <dd class="risk-target" id="target_pen_1"></dd>
+            <dt class="risk-sub">Kapitalbedarf zur Reduktion:</dt>
+            <dd class="risk-gap"><data id="gap_pen_1" value="0">CHF 0</data></dd>
+          </dl>
+          <footer class="risk-status" id="stat_pen_1" role="status">OK</footer>
+        </article>
+        
+        <!-- K2 pensioniert -->
+        <article class="risk-card" id="pen_2" aria-labelledby="pen-2-title">
+          <header class="risk-title">
+            <h4 id="pen-2-title">Käufer 2 pensioniert</h4>
+          </header>
+          <dl class="risk-body">
+            <dt>Rente K2 + Lohn K1:</dt>
+            <dd class="risk-value"><data id="val_pen_2" value="0">CHF 0</data></dd>
+            <dd class="risk-target" id="target_pen_2"></dd>
+            <dt class="risk-sub">Kapitalbedarf zur Reduktion:</dt>
+            <dd class="risk-gap"><data id="gap_pen_2" value="0">CHF 0</data></dd>
+          </dl>
+          <footer class="risk-status" id="stat_pen_2" role="status">OK</footer>
+        </article>
+        
+        <!-- Beide pensioniert -->
+        <article class="risk-card" id="pen_both" aria-labelledby="pen-both-title">
+          <header class="risk-title">
+            <h4 id="pen-both-title">Beide pensioniert</h4>
+          </header>
+          <dl class="risk-body">
+            <dt>Rente K1 + Rente K2:</dt>
+            <dd class="risk-value"><data id="val_pen_both" value="0">CHF 0</data></dd>
+            <dd class="risk-target" id="target_pen_both"></dd>
+            <dt class="risk-sub">Kapitalbedarf zur Reduktion:</dt>
+            <dd class="risk-gap"><data id="gap_pen_both" value="0">CHF 0</data></dd>
+          </dl>
+          <footer class="risk-status" id="stat_pen_both" role="status">OK</footer>
+        </article>
+      </div>
+    </section>
+
+    <nav class="phase-actions no-print">
+      <button id="btnToPhase4" type="button" class="btn btn-primary">
+        Weiter zur Produktwahl
+      </button>
+    </nav>
+  </article>
+  
+  <!-- ============================================
+       PHASE 4: PRODUKTWAHL
+       ============================================ -->
+  <article id="sectionResultsP4" 
+           class="phase-section collapsible collapsed phase-border-brand" 
+           aria-labelledby="results-p4-title">
+    
+    <header class="phase-header">
+      <h2 id="results-p4-title">Phase 4: Produkt & Reales Budget</h2>
+      <button id="btnBackToRisk" 
+              type="button"
+              class="btn btn-ghost no-print">
+        Zurück
+      </button>
+    </header>
+    
+    <div class="product-layout">
+      <!-- Tranchen-Konfiguration -->
+      <section class="tranche-box" aria-labelledby="tranche-title">
+        <h3 id="tranche-title">Hypothekar-Mix zusammenstellen</h3>
+        
+        <p class="tranche-info">
+          Hypothek: <strong><data id="p3_targetHypo" value="0">CHF 0</data></strong>
+          <span id="p3_deltaDisplay" class="tranche-delta"></span>
+        </p>
+        
+        <p class="tranche-hint">
+          <small>
+            * Die angegebenen Zinssätze sind unverbindliche Richtwerte.<br>
+            * Mindestbetrag pro Tranche: CHF 100'000
+          </small>
+        </p>
+        
+        <div id="trancheContainer" role="list" aria-label="Hypothekar-Tranchen">
+          <!-- Tranchen werden dynamisch eingefügt -->
+        </div>
+        
+        <button id="btnAddTranche" 
+                type="button"
+                class="btn-small-ghost no-print"
+                aria-label="Weitere Tranche hinzufügen">
+          + Tranche hinzufügen
+        </button>
+        
+        <!-- Amortisationsart -->
+        <fieldset id="amortTypeSection" class="amort-fieldset" hidden>
+          <legend>Amortisation der 2. Hypothek</legend>
+          
+          <p class="amort-info">
+            Monatliche Amortisation: <strong><data id="p4_amortMonthly" value="0">CHF 0</data></strong>
+          </p>
+          
+          <div class="radio-group" role="radiogroup" aria-label="Amortisationsart">
+            <label class="radio-label">
+              <input type="radio" name="amortType" value="direct">
+              <span>Direkt</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="amortType" value="indirect" checked>
+              <span>Indirekt (3a)</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="amortType" value="mix">
+              <span>Mix</span>
+            </label>
+          </div>
+          
+          <div id="amortMixFields" class="amort-mix-fields" hidden>
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label for="amortDirectAmount">Direkte Amortisation (mtl.)</label>
+                <input type="text" 
+                       id="amortDirectAmount" 
+                       name="amortDirectAmount"
+                       class="money"
+                       value="0"
+                       inputmode="numeric">
+              </div>
+              <div class="form-group">
+                <label for="amort3aAmount">Via Säule 3a (mtl.)</label>
+                <input type="text" 
+                       id="amort3aAmount" 
+                       name="amort3aAmount"
+                       class="money"
+                       value="0"
+                       inputmode="numeric">
+              </div>
+            </div>
+            <output id="amortMixTotal" class="amort-total"></output>
+          </div>
+        </fieldset>
+      </section>
+      
+      <!-- Chart -->
+      <figure class="chart-box" aria-labelledby="chart-p3-title">
+        <figcaption id="chart-p3-title" class="chart-title">Zusammensetzung Kosten (Real)</figcaption>
+        <div id="chartP3_Donut" role="img" aria-label="Kreisdiagramm Kostenaufteilung"></div>
+      </figure>
+    </div>
+    
+    <!-- KPI Dashboard -->
+    <section class="kpi-dashboard tiles-p3" aria-label="Kennzahlen Reale Kosten">
+      
+      <figure class="kpi ok" id="kpi3_total" role="group" aria-labelledby="kpi-real-total-label">
+        <figcaption id="kpi-real-total-label" class="kpi-label">Reale Monatsbelastung</figcaption>
+        <data id="t3_monthlyTotalReal" class="kpi-value" value="0">CHF 0</data>
+        <small id="t3_mixRate" class="kpi-sub">Mischzins: 0.00%</small>
+      </figure>
+      
+      <figure class="kpi" role="group" aria-labelledby="kpi-interest-label">
+        <figcaption id="kpi-interest-label" class="kpi-label">Hypothekarzins</figcaption>
+        <data id="t3_interest" class="kpi-value" value="0">CHF 0</data>
+        <small class="kpi-sub">Monatlich (real)</small>
+      </figure>
+      
+      <figure class="kpi" role="group" aria-labelledby="kpi-amort-label">
+        <figcaption id="kpi-amort-label" class="kpi-label">Amortisation</figcaption>
+        <data id="t3_amort" class="kpi-value" value="0">CHF 0</data>
+        <small class="kpi-sub">Monatlich</small>
+      </figure>
+      
+      <figure class="kpi kpi-maintenance" role="group" aria-labelledby="kpi-op-label">
+        <figcaption id="kpi-op-label" class="kpi-label">Unterhalt</figcaption>
+        <data id="t3_opCost" class="kpi-value" value="0">CHF 0</data>
+        <small class="kpi-sub">0.4% vom Objektwert</small>
+      </figure>
+      
+      <figure class="kpi kpi-reserve" role="group" aria-labelledby="kpi-reno-label">
+        <figcaption id="kpi-reno-label" class="kpi-label">Rückstellungen</figcaption>
+        <data id="t3_renoReserve" class="kpi-value" value="0">CHF 0</data>
+        <small class="kpi-sub">0.6% vom Objektwert</small>
+      </figure>
+    </section>
+
+    <nav class="phase-actions no-print">
+      <button id="btnToPhase5" type="button" class="btn btn-primary">
+        Weiter zur Zusammenfassung
+      </button>
+    </nav>
+  </article>
+
+  <!-- ============================================
+       PHASE 5: ZUSAMMENFASSUNG
+       ============================================ -->
+  <article id="sectionResultsP5" 
+           class="phase-section collapsible collapsed phase-border-brand-heavy" 
+           aria-labelledby="results-p5-title">
+    
+    <header class="phase-header">
+      <h2 id="results-p5-title">Zusammenfassung: Monatliche Wohnkosten</h2>
+      <button id="btnBackToP4" 
+              type="button"
+              class="btn btn-ghost no-print">
+        Zurück
+      </button>
+    </header>
+
+    <section id="cost_summary_grid" 
+             class="kpi-dashboard tiles-p3" 
+             aria-label="Kostenübersicht">
+      <!-- Wird dynamisch gefüllt -->
+    </section>
+
+    <hr class="section-divider section-divider-warning">
+    
+    <section aria-labelledby="recommendations-title">
+      <h2 id="recommendations-title" class="title-danger">Handlungsbedarf & Empfehlungen</h2>
+      
+      <!-- Versicherungen Käufer 1 -->
+      <section id="rec_insurance_b1" aria-labelledby="rec-ins-b1-title" hidden>
+        <h3 id="rec-ins-b1-title" class="rec-section-title">
+          Versicherungsempfehlungen: Käufer 1
+        </h3>
+        <div id="rec_insurance_b1_grid" class="tiles-p3" role="list">
+          <!-- Dynamisch gefüllt -->
+        </div>
+      </section>
+      
+      <!-- Versicherungen Käufer 2 -->
+      <section id="rec_insurance_b2" aria-labelledby="rec-ins-b2-title" hidden>
+        <h3 id="rec-ins-b2-title" class="rec-section-title">
+          Versicherungsempfehlungen: Käufer 2
+        </h3>
+        <div id="rec_insurance_b2_grid" class="tiles-p3" role="list">
+          <!-- Dynamisch gefüllt -->
+        </div>
+      </section>
+      
+      <!-- Kapitalaufbau -->
+      <section id="rec_capital" aria-labelledby="rec-capital-title">
+        <h3 id="rec-capital-title" class="rec-section-title">
+          Kapitalaufbau & Reserven
+        </h3>
+        <div id="rec_capital_grid" class="tiles-p3" role="list">
+          <!-- Dynamisch gefüllt -->
+        </div>
+      </section>
+      
+      <!-- Keine Empfehlungen -->
+      <aside id="rec_none" hidden>
+        <figure class="kpi ok" role="group">
+          <figcaption class="kpi-label">Alles im grünen Bereich</figcaption>
+          <data class="kpi-value">Keine kritischen Lücken</data>
+          <small class="kpi-sub">Ihre Finanzierung ist solide abgesichert.</small>
+        </figure>
+      </aside>
+    </section>
+
+    <nav class="phase-actions no-print">
+      <button id="btnToPhase6" type="button" class="btn btn-primary">
+        Weiter zu Lösungen & Vollmacht
+      </button>
+    </nav>
+  </article>
+
+  <!-- ============================================
+       PHASE 6: LÖSUNGEN & VOLLMACHT
+       ============================================ -->
+  <article id="sectionResultsP6" 
+           class="phase-section collapsible collapsed phase-border-ok" 
+           aria-labelledby="results-p6-title">
+    
+    <header class="phase-header">
+      <h2 id="results-p6-title" class="title-ok">Lösungen - Unser Vorschlag</h2>
+      <button id="btnBackToP5" 
+              type="button"
+              class="btn btn-ghost no-print">
+        Zurück
+      </button>
+    </header>
+
+    <p class="phase-intro">
+      Basierend auf der Analyse empfehlen wir folgende Produkte. 
+      Bitte wählen Sie, für welche Positionen wir Offerten einholen sollen.
+    </p>
+
+    <!-- HYPOTHEK -->
+    <section class="proposal-section" aria-labelledby="proposal-hypo-title">
+      <h3 id="proposal-hypo-title" class="proposal-title">Hypothek</h3>
+      <p class="proposal-hint">
+        * Richtzinse sind unverbindliche Schätzungen und können je nach Anbieter variieren.
+      </p>
+      
+      <table class="proposal-table" id="proposal_hypothek">
+        <thead class="visually-hidden">
+          <tr>
+            <th scope="col">Produkt</th>
+            <th scope="col">Betrag</th>
+            <th scope="col">Zinssatz</th>
+            <th scope="col">Offerte einholen?</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Dynamisch gefüllt -->
+        </tbody>
+      </table>
+    </section>
+
+    <!-- VERSICHERUNGEN PERSONEN -->
+    <section class="proposal-section" aria-labelledby="proposal-ins-title">
+      <h3 id="proposal-ins-title" class="proposal-title">Personenversicherungen</h3>
+      <p class="proposal-hint">Absicherung basierend auf der Risikoanalyse</p>
+      
+      <table class="proposal-table" id="proposal_insurance">
+        <thead class="visually-hidden">
+          <tr>
+            <th scope="col">Produkt</th>
+            <th scope="col">Deckungssumme</th>
+            <th scope="col">Art</th>
+            <th scope="col">Offerte einholen?</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Dynamisch gefüllt -->
+        </tbody>
+      </table>
+    </section>
+
+    <!-- SACHVERSICHERUNGEN -->
+    <section class="proposal-section" aria-labelledby="proposal-sach-title">
+      <h3 id="proposal-sach-title" class="proposal-title">Sachversicherungen</h3>
+      <p class="proposal-hint">Prüfung und Optimierung der Deckungen rund ums Eigenheim</p>
+      
+      <table class="proposal-table">
+        <thead class="visually-hidden">
+          <tr>
+            <th scope="col">Produkt</th>
+            <th scope="col">Leistung</th>
+            <th scope="col">Prüfung gewünscht?</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="proposal-row">
+            <td class="proposal-product">Gebäudeversicherung</td>
+            <td class="proposal-amount">Prüfung & Beratung</td>
+            <td class="proposal-choice">
+              <fieldset>
+                <legend class="visually-hidden">Prüfung gewünscht?</legend>
+                <label><input type="radio" name="sach_gebaeude" value="ja"> Ja</label>
+                <label><input type="radio" name="sach_gebaeude" value="nein" checked> Nein</label>
+              </fieldset>
+            </td>
+          </tr>
+          <tr class="proposal-row">
+            <td class="proposal-product">Privathaftpflichtversicherung</td>
+            <td class="proposal-amount">Prüfung & Beratung</td>
+            <td class="proposal-choice">
+              <fieldset>
+                <legend class="visually-hidden">Prüfung gewünscht?</legend>
+                <label><input type="radio" name="sach_haftpflicht" value="ja"> Ja</label>
+                <label><input type="radio" name="sach_haftpflicht" value="nein" checked> Nein</label>
+              </fieldset>
+            </td>
+          </tr>
+          <tr class="proposal-row">
+            <td class="proposal-product">Hausratversicherung</td>
+            <td class="proposal-amount">Prüfung & Beratung</td>
+            <td class="proposal-choice">
+              <fieldset>
+                <legend class="visually-hidden">Prüfung gewünscht?</legend>
+                <label><input type="radio" name="sach_hausrat" value="ja"> Ja</label>
+                <label><input type="radio" name="sach_hausrat" value="nein" checked> Nein</label>
+              </fieldset>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- SPAREN & VORSORGE -->
+    <section class="proposal-section" aria-labelledby="proposal-save-title">
+      <h3 id="proposal-save-title" class="proposal-title">Sparen & Vorsorge</h3>
+      <p class="proposal-hint">Empfohlene monatliche Sparbeträge</p>
+      
+      <table class="proposal-table" id="proposal_saving">
+        <thead class="visually-hidden">
+          <tr>
+            <th scope="col">Produkt</th>
+            <th scope="col">Betrag</th>
+            <th scope="col">Intervall</th>
+            <th scope="col">Beratung gewünscht?</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Dynamisch gefüllt -->
+        </tbody>
+      </table>
+    </section>
+
+    <!-- VOLLMACHT -->
+    <section class="mandate-section" aria-labelledby="mandate-title">
+      <h3 id="mandate-title" class="mandate-title">Vollmacht & Datenschutzerklärung</h3>
+      
+      <div class="mandate-text">
+        <p>
+          Hiermit erteile(n) ich/wir der Firma <strong>OVP Partner GmbH</strong> die Vollmacht, 
+          in unserem Namen Offertanfragen und Verhandlungen mit Finanzinstituten (Banken und 
+          Versicherungen) für die oben ausgewählten Produkte zu führen.
+        </p>
+        <p id="mandate_sach_text" hidden>
+          Zusätzlich beauftrage(n) ich/wir OVP Partner GmbH mit der Prüfung und Beratung 
+          bezüglich der ausgewählten Sachversicherungen (Gebäude-, Privathaftpflicht- 
+          und/oder Hausratversicherung).
+        </p>
+        <p>
+          Die Firma OVP Partner GmbH verpflichtet sich, alle persönlichen Daten streng 
+          vertraulich zu behandeln und die geltenden Datenschutzbestimmungen (DSG) einzuhalten. 
+          Die Daten werden ausschliesslich für die oben genannten Zwecke verwendet und nicht 
+          an unbeteiligte Dritte weitergegeben.
+        </p>
+        <p>
+          Diese Vollmacht kann jederzeit schriftlich widerrufen werden.
+        </p>
+      </div>
+
+      <footer class="signature-section">
+        <div class="signature-row">
+          <div class="signature-field">
+            <label for="sig_date">Ort, Datum</label>
+            <output id="sig_date" class="signature-line"></output>
+          </div>
+        </div>
+        
+        <div class="signature-row">
+          <div class="signature-field" id="sig_block_b1">
+            <label>Käufer 1</label>
+            <div class="signature-line" aria-label="Unterschrift Käufer 1"></div>
+            <output id="sig_name_b1" class="signature-name"></output>
+          </div>
+          <div class="signature-field" id="sig_block_b2" hidden>
+            <label>Käufer 2</label>
+            <div class="signature-line" aria-label="Unterschrift Käufer 2"></div>
+            <output id="sig_name_b2" class="signature-name"></output>
+          </div>
+        </div>
+      </footer>
+    </section>
+
+    <!-- Finale Aktionen -->
+    <nav class="phase-actions phase-actions-center no-print" aria-label="Dokument-Aktionen">
+      <button id="btnPrint" 
+              type="button"
+              class="btn btn-success"
+              aria-label="Dokument drucken">
+        <span aria-hidden="true">🖨️</span> Dokument drucken
+      </button>
+    </nav>
+  </article>
+
+</main>
+
+<footer class="app-footer no-print">
+  <p>
+    <small>© <time datetime="2024">2024</time> OVP Partner GmbH — Hypotheken-Cockpit</small>
+  </p>
+</footer>
+
+</body>
+</html>
