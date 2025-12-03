@@ -25,6 +25,10 @@
   let chartP1 = null, chartP2Bar = null, chartP2Donut = null, chartP3Donut = null;
   let data = {};
   
+  // Käufer-Modus (1 oder 2 Käufer)
+  let buyerMode = 2; // Default: 2 Käufer
+  let hasDeathBeneficiary = false; // Bei 1 Käufer: Soll jemand übernehmen?
+  
   let riskGaps = {
     b1: { alv: 0, iv: 0, death: 0 },
     b2: { alv: 0, iv: 0, death: 0 },
@@ -79,6 +83,47 @@
       el.textContent = text || fmtCHF(value);
     }
   };
+
+  // --- BUYER MODE FUNCTIONS ---
+  function updateBuyerMode() {
+    const buyerCountRadio = document.querySelector('input[name="buyerCount"]:checked');
+    buyerMode = buyerCountRadio ? parseInt(buyerCountRadio.value) : 2;
+    
+    const beneficiaryRadio = document.querySelector('input[name="deathBeneficiary"]:checked');
+    hasDeathBeneficiary = beneficiaryRadio ? beneficiaryRadio.value === 'yes' : false;
+    
+    const buyerGrid = q('#buyerGrid');
+    const singleBuyerOptions = q('#singleBuyerOptions');
+    
+    if (buyerMode === 1) {
+      // Single buyer mode
+      if (buyerGrid) buyerGrid.classList.add('single-buyer');
+      if (singleBuyerOptions) singleBuyerOptions.hidden = false;
+      
+      // Clear buyer 2 values
+      qAll('.buyer2-col input, .buyer2-col select').forEach(el => {
+        if (el.type === 'number') el.value = '0';
+        else if (el.tagName === 'SELECT') el.selectedIndex = 0;
+        else el.value = '';
+      });
+    } else {
+      // Two buyers mode
+      if (buyerGrid) buyerGrid.classList.remove('single-buyer');
+      if (singleBuyerOptions) singleBuyerOptions.hidden = true;
+      hasDeathBeneficiary = false; // Reset bei 2 Käufern
+    }
+  }
+
+  function setupBuyerModeListeners() {
+    qAll('input[name="buyerCount"]').forEach(radio => {
+      radio.addEventListener('change', updateBuyerMode);
+    });
+    qAll('input[name="deathBeneficiary"]').forEach(radio => {
+      radio.addEventListener('change', () => {
+        hasDeathBeneficiary = q('#deathBeneficiaryYes')?.checked || false;
+      });
+    });
+  }
 
   // --- HELPER: Berechne tragbare Hypothek basierend auf Einkommen ---
   function calcAffordableMortgage(income) {
@@ -328,20 +373,51 @@
       setText('#stat_iv', 'OK');
     }
 
-    const deathInc1 = getVal('#b1_pension_death') + data.inc2;
-    setDataValue('#val_death', deathInc1);
-    setText('#target_death', targetTxt);
-    riskGaps.b1.death = calcDeathCapitalNeeded(deathInc1);
-    
+    // Todesfallrisiko K1 - nur anzeigen wenn:
+    // - 2 Käufer ODER
+    // - 1 Käufer MIT Begünstigtem (hasDeathBeneficiary)
     const riskDeath = q('#risk_death');
-    if (riskGaps.b1.death > 0) {
-      setDataValue('#gap_death', riskGaps.b1.death);
-      if (riskDeath) { riskDeath.classList.remove('ok', 'warn'); riskDeath.classList.add('alert'); }
-      setText('#stat_death', 'LÜCKE');
+    const showDeathRiskB1 = buyerMode === 2 || hasDeathBeneficiary;
+    
+    if (riskDeath) {
+      riskDeath.style.display = showDeathRiskB1 ? '' : 'none';
+    }
+    
+    if (showDeathRiskB1) {
+      // Bei 1 Käufer + Begünstigtem: Nur Hinterlassenenrente (ohne Lohn K2)
+      const deathInc1 = buyerMode === 1 
+        ? getVal('#b1_pension_death')  // Nur Hinterlassenenrente
+        : getVal('#b1_pension_death') + data.inc2;  // + Lohn K2
+      
+      setDataValue('#val_death', deathInc1);
+      setText('#target_death', targetTxt);
+      
+      // Label anpassen je nach Modus
+      const deathLabel = q('#risk-death-title');
+      if (deathLabel) {
+        deathLabel.textContent = buyerMode === 1 ? 'Todesfall' : 'Todesfall (K1)';
+      }
+      const deathValLabel = riskDeath?.querySelector('.risk-body dt');
+      if (deathValLabel) {
+        deathValLabel.textContent = buyerMode === 1 
+          ? 'Hinterlassenenrente:' 
+          : 'Hinterlassenenrente + Lohn K2:';
+      }
+      
+      riskGaps.b1.death = calcDeathCapitalNeeded(deathInc1);
+      
+      if (riskGaps.b1.death > 0) {
+        setDataValue('#gap_death', riskGaps.b1.death);
+        if (riskDeath) { riskDeath.classList.remove('ok', 'warn'); riskDeath.classList.add('alert'); }
+        setText('#stat_death', 'LÜCKE');
+      } else {
+        setDataValue('#gap_death', 0, 'Keine');
+        if (riskDeath) { riskDeath.classList.remove('alert', 'warn'); riskDeath.classList.add('ok'); }
+        setText('#stat_death', 'OK');
+      }
     } else {
-      setDataValue('#gap_death', 0, 'Keine');
-      if (riskDeath) { riskDeath.classList.remove('alert', 'warn'); riskDeath.classList.add('ok'); }
-      setText('#stat_death', 'OK');
+      // Kein Todesfallrisiko bei 1 Käufer ohne Begünstigten
+      riskGaps.b1.death = 0;
     }
 
     const crashMax = data.totalInvest * 0.8 * (CONFIG.MAX_LTV / 100);
@@ -481,9 +557,40 @@
       }
     };
     
-    checkPension(pen1 + work2, '#val_pen_1', '#gap_pen_1', '#stat_pen_1', '#target_pen_1', 'b1');
-    checkPension(pen2 + work1, '#val_pen_2', '#gap_pen_2', '#stat_pen_2', '#target_pen_2', 'b2');
-    checkPension(pen1 + pen2, '#val_pen_both', '#gap_pen_both', '#stat_pen_both', '#target_pen_both', 'both');
+    // Pension Card visibility based on buyer mode
+    const penCard2 = q('#pen_2');
+    const penCardBoth = q('#pen_both');
+    
+    if (buyerMode === 1) {
+      // Single buyer: nur K1 pensioniert zeigen
+      if (penCard2) penCard2.style.display = 'none';
+      if (penCardBoth) penCardBoth.style.display = 'none';
+      
+      // Label anpassen
+      const pen1Title = q('#pen-1-title');
+      if (pen1Title) pen1Title.textContent = 'Pensionierung';
+      const pen1ValLabel = q('#pen_1 .risk-body dt');
+      if (pen1ValLabel) pen1ValLabel.textContent = 'Altersrente:';
+      
+      checkPension(pen1, '#val_pen_1', '#gap_pen_1', '#stat_pen_1', '#target_pen_1', 'b1');
+      // Reset K2 und both gaps
+      riskGaps.pension.b2 = 0;
+      riskGaps.pension.both = 0;
+    } else {
+      // Two buyers: alle Pensionskarten zeigen
+      if (penCard2) penCard2.style.display = '';
+      if (penCardBoth) penCardBoth.style.display = '';
+      
+      // Labels zurücksetzen
+      const pen1Title = q('#pen-1-title');
+      if (pen1Title) pen1Title.textContent = 'Käufer 1 pensioniert';
+      const pen1ValLabel = q('#pen_1 .risk-body dt');
+      if (pen1ValLabel) pen1ValLabel.textContent = 'Rente K1 + Lohn K2:';
+      
+      checkPension(pen1 + work2, '#val_pen_1', '#gap_pen_1', '#stat_pen_1', '#target_pen_1', 'b1');
+      checkPension(pen2 + work1, '#val_pen_2', '#gap_pen_2', '#stat_pen_2', '#target_pen_2', 'b2');
+      checkPension(pen1 + pen2, '#val_pen_both', '#gap_pen_both', '#stat_pen_both', '#target_pen_both', 'both');
+    }
   }
 
   function getRecommendationClass(gapType, gapValue) {
@@ -501,7 +608,8 @@
   function renderRecommendations() {
     const b1Name = q('#b1_name')?.value?.trim() || 'Käufer 1';
     const b2Name = q('#b2_name')?.value?.trim() || 'Käufer 2';
-    const hasB2 = data.inc2 > 0 || b2Name !== 'Käufer 2';
+    // Bei 1 Käufer immer hasB2 = false
+    const hasB2 = buyerMode === 2 && (data.inc2 > 0 || b2Name !== 'Käufer 2');
     
     let hasAnyRec = false;
     
@@ -802,7 +910,8 @@
   function renderP6() {
     const b1Name = q('#b1_name')?.value?.trim() || 'Käufer 1';
     const b2Name = q('#b2_name')?.value?.trim() || '';
-    const hasB2 = data.inc2 > 0 || b2Name !== '';
+    // Bei 1 Käufer immer hasB2 = false
+    const hasB2 = buyerMode === 2 && (data.inc2 > 0 || b2Name !== '');
     
     const hypoGrid = q('#proposal_hypothek tbody') || q('#proposal_hypothek');
     if (hypoGrid) {
@@ -1011,6 +1120,10 @@
     const b2Birth = q('#b2_birth');
     if (b1Birth && !b1Birth.value) b1Birth.value = dateStr;
     if (b2Birth && !b2Birth.value) b2Birth.value = dateStr;
+    
+    // Setup buyer mode listeners
+    setupBuyerModeListeners();
+    updateBuyerMode();
     
     initEventListeners();
     calcAll();

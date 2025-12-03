@@ -68,15 +68,47 @@
         Füllen Sie alle relevanten Felder aus. Pflichtfelder sind mit einem Stern markiert.
       </p>
       
+      <!-- Käufer-Anzahl Auswahl -->
+      <fieldset class="fieldset-highlight" id="buyerCountSection">
+        <legend>Anzahl Käufer</legend>
+        
+        <div class="radio-group" role="radiogroup" aria-label="Anzahl Käufer auswählen">
+          <label class="radio-label radio-label-large">
+            <input type="radio" name="buyerCount" value="1" id="buyerCount1">
+            <span>1 Käufer</span>
+          </label>
+          <label class="radio-label radio-label-large">
+            <input type="radio" name="buyerCount" value="2" id="buyerCount2" checked>
+            <span>2 Käufer</span>
+          </label>
+        </div>
+        
+        <!-- Zusatzfrage bei 1 Käufer -->
+        <div id="singleBuyerOptions" class="single-buyer-options" hidden>
+          <hr>
+          <p class="option-question">Soll eine andere Person das Eigenheim im Todesfall übernehmen können?</p>
+          <div class="radio-group" role="radiogroup" aria-label="Übernahme im Todesfall">
+            <label class="radio-label">
+              <input type="radio" name="deathBeneficiary" value="yes" id="deathBeneficiaryYes">
+              <span>Ja (z.B. Kinder, Geschwister, Partner)</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="deathBeneficiary" value="no" id="deathBeneficiaryNo" checked>
+              <span>Nein</span>
+            </label>
+          </div>
+        </div>
+      </fieldset>
+      
       <!-- Käufer-Daten Grid -->
       <section class="buyer-section" aria-labelledby="buyers-heading">
         <h3 id="buyers-heading" class="visually-hidden">Käuferdaten</h3>
         
-        <div class="buyer-grid-container" role="grid">
+        <div class="buyer-grid-container" role="grid" id="buyerGrid">
           <!-- Header Row -->
           <div class="buyer-header-label" role="columnheader"></div>
-          <div class="buyer-header" role="columnheader" id="col-buyer1">Käufer 1 (Hauptverdiener)</div>
-          <div class="buyer-header" role="columnheader" id="col-buyer2">Käufer 2 (Partner/in)</div>
+          <div class="buyer-header" role="columnheader" id="col-buyer1">Käufer 1</div>
+          <div class="buyer-header buyer2-col" role="columnheader" id="col-buyer2">Käufer 2 (Partner/in)</div>
 
           <!-- PERSONALIEN -->
           <div class="buyer-separator" role="rowgroup">
@@ -94,7 +126,7 @@
                    placeholder="Muster Hans"
                    autocomplete="name">
           </div>
-          <div role="gridcell">
+          <div role="gridcell" class="buyer2-col">
             <input type="text" 
                    id="b2_name" 
                    name="b2_name"
@@ -114,7 +146,7 @@
                    placeholder="Musterstrasse 1"
                    autocomplete="street-address">
           </div>
-          <div role="gridcell">
+          <div role="gridcell" class="buyer2-col">
             <input type="text" 
                    id="b2_address" 
                    name="b2_address"
@@ -134,7 +166,7 @@
                    placeholder="8000 Zürich"
                    autocomplete="postal-code">
           </div>
-          <div role="gridcell">
+          <div role="gridcell" class="buyer2-col">
             <input type="text" 
                    id="b2_city" 
                    name="b2_city"
@@ -153,7 +185,7 @@
                    aria-labelledby="label-birth col-buyer1"
                    autocomplete="bday">
           </div>
-          <div role="gridcell">
+          <div role="gridcell" class="buyer2-col">
             <input type="date" 
                    id="b2_birth" 
                    name="b2_birth"
@@ -174,7 +206,7 @@
               <option value="geschieden">Geschieden</option>
             </select>
           </div>
-          <div role="gridcell">
+          <div role="gridcell" class="buyer2-col">
             <select id="b2_civil" 
                     name="b2_civil"
                     aria-labelledby="label-civil col-buyer2">
@@ -198,7 +230,7 @@
                    min="0" 
                    max="10">
           </div>
-          <div role="gridcell">
+          <div role="gridcell" class="buyer2-col">
             <input type="number" 
                    id="b2_kids" 
                    name="b2_kids"
@@ -224,7 +256,7 @@
                    placeholder="z.B. Architekt"
                    autocomplete="organization-title">
           </div>
-          <div role="gridcell">
+          <div role="gridcell" class="buyer2-col">
             <input type="text" 
                    id="b2_job" 
                    name="b2_job"
@@ -244,7 +276,7 @@
                    placeholder="MM.JJJJ"
                    pattern="\d{2}\.\d{4}">
           </div>
-          <div role="gridcell">
+          <div role="gridcell" class="buyer2-col">
             <input type="text" 
                    id="b2_since" 
                    name="b2_since"
@@ -264,7 +296,7 @@
                    placeholder="Firma AG"
                    autocomplete="organization">
           </div>
-          <div role="gridcell">
+          <div role="gridcell" class="buyer2-col">
             <input type="text" 
                    id="b2_employer" 
                    name="b2_employer"
@@ -285,7 +317,7 @@
                    value="120'000"
                    inputmode="numeric">
           </div>
-          <div role="gridcell">
+          <div role="gridcell" class="buyer2-col">
             <input type="text" 
                    id="b2_income" 
                    name="b2_income"
@@ -312,7 +344,7 @@
                    value="0"
                    inputmode="numeric">
           </div>
-          <div role="gridcell">
+          <div role="gridcell" class="buyer2-col">
             <input type="text" 
                    id="b2_debt" 
                    name="b2_debt"
@@ -334,7 +366,7 @@
                    value="0"
                    inputmode="numeric">
           </div>
-          <div role="gridcell">
+          <div role="gridcell" class="buyer2-col">
             <input type="text" 
                    id="b2_alimony" 
                    name="b2_alimony"
@@ -361,7 +393,7 @@
                    value="80'000"
                    inputmode="numeric">
           </div>
-          <div role="gridcell">
+          <div role="gridcell" class="buyer2-col">
             <input type="text" 
                    id="b2_asset_bank" 
                    name="b2_asset_bank"
@@ -383,7 +415,7 @@
                    value="0"
                    inputmode="numeric">
           </div>
-          <div role="gridcell">
+          <div role="gridcell" class="buyer2-col">
             <input type="text" 
                    id="b2_asset_sec" 
                    name="b2_asset_sec"
@@ -405,7 +437,7 @@
                    value="20'000"
                    inputmode="numeric">
           </div>
-          <div role="gridcell">
+          <div role="gridcell" class="buyer2-col">
             <input type="text" 
                    id="b2_asset_3a" 
                    name="b2_asset_3a"
@@ -427,7 +459,7 @@
                    value="150'000"
                    inputmode="numeric">
           </div>
-          <div role="gridcell">
+          <div role="gridcell" class="buyer2-col">
             <input type="text" 
                    id="b2_asset_pk" 
                    name="b2_asset_pk"
@@ -454,7 +486,7 @@
                    value="70'000"
                    inputmode="numeric">
           </div>
-          <div role="gridcell">
+          <div role="gridcell" class="buyer2-col">
             <input type="text" 
                    id="b2_pension_old" 
                    name="b2_pension_old"
@@ -476,7 +508,7 @@
                    value="70'000"
                    inputmode="numeric">
           </div>
-          <div role="gridcell">
+          <div role="gridcell" class="buyer2-col">
             <input type="text" 
                    id="b2_pension_inv" 
                    name="b2_pension_inv"
@@ -498,7 +530,7 @@
                    value="40'000"
                    inputmode="numeric">
           </div>
-          <div role="gridcell">
+          <div role="gridcell" class="buyer2-col">
             <input type="text" 
                    id="b2_pension_death" 
                    name="b2_pension_death"
@@ -658,13 +690,13 @@
              hidden></aside>
 
       <!-- Aktionen -->
-      <div class="form-actions no-print">
+      <nav class="phase-actions no-print" aria-label="Phase 1 Aktionen">
         <button type="button" 
                 id="btnCalcPhase1" 
                 class="btn btn-primary">
           Analyse starten
         </button>
-      </div>
+      </nav>
     </form>
   </article>
 
@@ -735,15 +767,18 @@
         <div class="rec-box">
           <strong id="recP1_status" class="rec-status">Status</strong>
           <p id="recP1_text" class="rec-text">...</p>
-          <button id="btnToPhase2" 
-                  type="button"
-                  class="rec-btn no-print"
-                  hidden>
-            Weiter zu Phase 2
-          </button>
         </div>
       </aside>
     </section>
+
+    <nav class="phase-actions no-print" aria-label="Phase 1 Ergebnis Aktionen">
+      <button id="btnToPhase2" 
+              type="button"
+              class="btn btn-primary"
+              hidden>
+        Weiter zur Tragbarkeit
+      </button>
+    </nav>
   </article>
 
   <!-- ============================================
@@ -805,14 +840,17 @@
         <div class="rec-box">
           <strong id="recP2_status" class="rec-status">Status</strong>
           <p id="recP2_text" class="rec-text">...</p>
-          <button id="btnToPhase3" 
-                  type="button"
-                  class="rec-btn no-print">
-            Weiter zum Risiko-Check
-          </button>
         </div>
       </aside>
     </section>
+
+    <nav class="phase-actions no-print" aria-label="Phase 2 Aktionen">
+      <button id="btnToPhase3" 
+              type="button"
+              class="btn btn-primary">
+        Weiter zum Risiko-Check
+      </button>
+    </nav>
   </article>
 
   <!-- ============================================

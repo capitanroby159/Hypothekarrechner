@@ -108,6 +108,61 @@ select:focus-visible {
 }
 
 /* ============================================
+   BUYER COUNT SELECTION
+   ============================================ */
+.radio-label-large {
+  padding: var(--space-md) var(--space-lg);
+  background: var(--bg-white);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.radio-label-large:hover {
+  border-color: var(--brand);
+  background: var(--brand-light);
+}
+
+.radio-label-large input[type="radio"]:checked + span {
+  font-weight: 700;
+  color: var(--brand);
+}
+
+.radio-label-large:has(input[type="radio"]:checked) {
+  border-color: var(--brand);
+  background: var(--brand-light);
+}
+
+.single-buyer-options {
+  margin-top: var(--space-md);
+}
+
+.single-buyer-options hr {
+  margin: var(--space-md) 0;
+}
+
+.option-question {
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: var(--space-sm);
+}
+
+/* Single Buyer Mode - Hide Buyer 2 Column */
+.buyer-grid-container.single-buyer {
+  grid-template-columns: 1.2fr 1fr;
+}
+
+.buyer-grid-container.single-buyer .buyer2-col {
+  display: none;
+}
+
+/* Buyer separator spans full width in both modes */
+.buyer-grid-container.single-buyer .buyer-separator {
+  grid-column: 1 / -1;
+}
+
+/* ============================================
    LAYOUT
    ============================================ */
 .container {
